@@ -3,9 +3,8 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.shortcuts import redirect
 
-from accounts.views import login_view, logout_view, firebase_login_view
+from accounts.views import login_view, logout_view, firebase_login_view, signup_view, landing_view
 from projects.views import (
     dashboard_view, project_list_view, upload_project_view, 
     project_detail_view, start_review_view, project_findings_view, 
@@ -21,8 +20,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Web Auth
-    path('', lambda req: redirect('dashboard')),
+    path('', landing_view, name='home'),
     path('login/', login_view, name='login'),
+    path('signup/', signup_view, name='signup'),
     path('logout/', logout_view, name='logout'),
     path('auth/firebase/', firebase_login_view, name='firebase_login'),
 

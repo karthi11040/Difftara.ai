@@ -3,6 +3,9 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 
+def landing_view(request):
+    return render(request, 'home.html')
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -18,6 +21,11 @@ def login_view(request):
             messages.error(request, 'Invalid username or password.')
 
     return render(request, 'accounts/login.html')
+
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'accounts/signup.html')
 
 @require_POST
 def logout_view(request):

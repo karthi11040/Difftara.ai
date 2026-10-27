@@ -1,0 +1,11 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>Create account · Difftara.ai</title><link rel="stylesheet" href="{% static 'css/custom.css' %}"></head>
+<body class="login-page">
+  <a class="skip-link" href="#signup-content">Skip to content</a>
+  <main id="signup-content" class="login-layout">
+    <section class="login-story" aria-labelledby="signup-welcome"><a class="brand brand-light" href="{% url 'home' %}"><img class="difftara-logo" src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a><p class="eyebrow">A clearer way to review projects</p><h1 id="signup-welcome">Good reviews start with good context.</h1><p class="story-copy">Bring requirements and source together, then turn changes into useful, evidence-based feedback.</p><div class="color-notes" aria-hidden="true"><i></i><i></i><i></i><i></i></div></section>
+    <section class="login-panel" aria-labelledby="signup-title"><div class="login-form-wrap"><p class="eyebrow">Get started</p><h2 id="signup-title">Create your Difftara.ai account</h2><p class="muted">Continue with Google or GitHub. A verified email is required.</p>{% include 'accounts/_social_auth.html' with action='Sign up' %}<p class="login-footnote">Already have an account? <a href="{% url 'login' %}">Sign in</a></p></div></section>
+  </main>
+</body>
+</html>

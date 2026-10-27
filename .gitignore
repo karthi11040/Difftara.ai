@@ -11,5 +11,5 @@ uploads/*
 staticfiles/
 *.log
 /login.html
-/{
+/[{]
 .venv/

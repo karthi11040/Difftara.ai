@@ -28,30 +28,11 @@
           <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
           <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">→</span></button>
         </form>
-        <div class="oauth-divider"><span>or continue with</span></div>
-        <div class="oauth-actions"><button class="button button-secondary button-wide" type="button" data-provider="google">Continue with Google</button><button class="button button-secondary button-wide" type="button" data-provider="github">Continue with GitHub</button></div>
-        <p class="login-footnote" id="oauth-status" role="status"></p>
+        {% include 'accounts/_social_auth.html' with action='Sign in' %}
         <p class="login-footnote">Need access? Ask your project administrator to create an account.</p>
+        <p class="login-footnote">New to Difftara.ai? <a href="{% url 'signup' %}">Create an account</a></p>
       </div>
     </section>
   </main>
 </body>
-<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
-<script>
-  firebase.initializeApp({apiKey:"AIzaSyBdOsGzbh_Im3X4KgZluo1o1EgGTKK7BeM",authDomain:"difftara-ai-139ec.firebaseapp.com",projectId:"difftara-ai-139ec",appId:"1:164065747404:web:dde7e02fe66512d6ac7d69"});
-  document.querySelectorAll('[data-provider]').forEach(button=>button.addEventListener('click',async()=>{
-    const status=document.getElementById('oauth-status');
-    const Provider=button.dataset.provider==='google'?firebase.auth.GoogleAuthProvider:firebase.auth.GithubAuthProvider;
-    try {
-      const provider=new Provider();
-      if(button.dataset.provider==='github') provider.addScope('user:email');
-      const result=await firebase.auth().signInWithPopup(provider);
-      const response=await fetch('{% url "firebase_login" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({id_token:await result.user.getIdToken()})});
-      if(!response.ok) throw new Error((await response.json()).error||'Sign-in could not be completed.');
-      const target=new URL(new URLSearchParams(location.search).get('next')||'{% url "dashboard" %}',location.origin);
-      location.href=target.origin===location.origin?target.href:'{% url "dashboard" %}';
-    } catch(error) { status.textContent=error.message; }
-  }));
-</script>
 </html>
