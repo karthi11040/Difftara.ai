@@ -1,24 +1,40 @@
 {% extends 'base.html' %}
 {% block title %}Code review · Difftara.ai{% endblock %}
 {% block content %}
-<section class="page-heading"><div><p class="eyebrow">Difftara.ai · AI review</p><h1>Review code</h1><p class="muted">Check correctness, bugs, code quality, and simplicity. Source is read as text and never executed.</p></div></section>
+<section class="page-heading"><div><p class="eyebrow">Difftara.ai · AI review</p><h1>Review code</h1><p class="muted">Inspect correctness, bugs, security, quality, and simplicity. Code is read as text and never executed.</p></div></section>
 <form method="post" enctype="multipart/form-data" class="form-stack code-review-form">{% csrf_token %}
   <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Choose input</p><h2>What should we review?</h2></div></div>
-    <div class="review-input-tabs" role="tablist"><button type="button" class="input-tab is-active" data-target="paste-panel">Paste code</button><button type="button" class="input-tab" data-target="file-panel">One file</button><button type="button" class="input-tab" data-target="zip-panel">ZIP project</button></div>
-    <div class="review-input-panel" id="paste-panel"><label for="source">Source code</label><textarea id="source" name="source" rows="15" maxlength="40000" placeholder="Paste a function or source file…"></textarea></div>
-    <div class="review-input-panel" id="file-panel" hidden><label for="code-file">Source file</label><input id="code-file" type="file" name="code_file" accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.h,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.html,.css,.sql,.sh"><small>UTF-8 source file, up to 1 MB.</small></div>
-    <div class="review-input-panel" id="zip-panel" hidden><label for="zip-file">ZIP archive</label><input id="zip-file" type="file" name="zip_file" accept=".zip"><small>Up to 15 MB. Reviews at most 40 source files; archives are never extracted or executed.</small></div>
+    <div class="review-input-tabs" role="group" aria-label="Code input type"><button type="button" class="input-tab is-active" data-target="paste-panel" aria-pressed="true">Paste code</button><button type="button" class="input-tab" data-target="file-panel" aria-pressed="false">One file</button><button type="button" class="input-tab" data-target="zip-panel" aria-pressed="false">ZIP project</button></div>
+    <div class="review-input-panel" id="paste-panel"><label for="source">Source code</label><textarea id="source" name="source" rows="15" maxlength="40000" placeholder="Paste a function or source file…"></textarea><small>Up to 40,000 characters.</small></div>
+    <div class="review-input-panel" id="file-panel" hidden><label for="code-file">Source file</label><input id="code-file" type="file" name="code_file" accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.h,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.html,.css,.sql,.sh"><small>UTF-8 source file, up to 1 MB; up to 40,000 characters are reviewed.</small></div>
+    <div class="review-input-panel" id="zip-panel" hidden><label for="zip-file">ZIP archive</label><input id="zip-file" type="file" name="zip_file" accept=".zip"><small>Up to 15 MB; at most 40 source files and 40 KB of source. Files are never extracted or executed.</small></div>
   </section>
-  <section class="panel"><div class="field"><label for="provider">Review model</label><select id="provider" name="provider"><option value="gensara">GenSeraLabs API</option><option value="local">Local model (Ollama)</option></select><small>GenSera receives the selected source code for processing. Choose Local to keep code on this machine.</small></div></section>
+  <section class="panel provider-panel"><div class="panel-heading"><div><p class="eyebrow">Choose where analysis runs</p><h2>AI provider</h2></div></div>
+    <div class="field"><label for="provider">Provider</label><select id="provider" name="provider"><option value="gensara" {% if provider == 'gensara' %}selected{% endif %}>GenSeraLabs</option><option value="custom" {% if provider == 'custom' %}selected{% endif %}>Custom OpenAI-compatible provider</option><option value="local" {% if provider == 'local' %}selected{% endif %}>Local model · Ollama</option></select></div>
+    <div class="field provider-settings" data-provider="gensara"><label for="gensara-key">GenSera API key <span class="optional-label">optional if configured on server</span></label><input id="gensara-key" name="api_key" type="password" autocomplete="off" maxlength="4096" placeholder="Paste key for this review"></div>
+    <div class="provider-settings" data-provider="custom" hidden><div class="field"><label for="custom-key">Provider API key</label><input id="custom-key" name="api_key" type="password" autocomplete="off" maxlength="4096" placeholder="Paste key for this review"></div><div class="field"><label for="base-url">HTTPS API base URL</label><input id="base-url" name="base_url" type="url" maxlength="500" placeholder="https://api.example.com/v1" autocomplete="url" value="{% if provider == 'custom' %}{{ base_url }}{% endif %}"></div><div class="field"><label for="custom-model">Model name</label><input id="custom-model" name="model" type="text" maxlength="200" placeholder="e.g. provider-coder-model" value="{% if provider == 'custom' %}{{ model }}{% endif %}"></div><small>Works with providers that expose the OpenAI chat-completions API. HTTPS public hosts are required.</small></div>
+    <div class="field provider-settings" data-provider="local" hidden><label for="local-model">Ollama model</label><input id="local-model" name="model" type="text" maxlength="200" value="{% if provider == 'local' %}{{ model|default:'qwen2.5-coder:1.5b-instruct' }}{% else %}qwen2.5-coder:1.5b-instruct{% endif %}" placeholder="qwen2.5-coder:1.5b-instruct"><small>Run Ollama on the Django server and pull the model first. Source stays on that machine.</small></div>
+    <p class="provider-privacy">API keys entered here are used for this request only. They are not saved to your account or shown again. Code is sent to the selected hosted provider; choose Ollama for local processing.</p>
+  </section>
   <div class="form-actions"><button class="button button-primary" type="submit">Review code <span aria-hidden="true">→</span></button></div>
 </form>
-{% if review %}<section class="panel review-result" aria-labelledby="review-result-title"><p class="eyebrow">Review complete · {{ provider }}</p><h2 id="review-result-title">Findings for {{ files|join:", " }}</h2><div class="review-markdown">{{ review|linebreaksbr }}</div><p class="muted">AI suggestions can be wrong. Verify each finding against your code and run your own checks.</p></section>{% endif %}
+{% if review %}<section class="panel review-result" aria-labelledby="review-result-title"><p class="eyebrow">Review complete · {{ provider }}{% if model %} · {{ model }}{% endif %}</p><h2 id="review-result-title">Findings, corrections, and review guide</h2><p class="review-files"><strong>Reviewed:</strong> {{ files|join:", " }}</p><pre class="review-markdown">{{ review }}</pre><p class="muted">AI findings are suggestions, not proof. Examples are targeted fixes; review them in context and run your own checks. No submitted code was executed.</p></section>{% endif %}
 {% endblock %}
 {% block extra_js %}<script>
-  document.querySelectorAll('.input-tab').forEach(tab=>tab.addEventListener('click',()=>{
-    document.querySelectorAll('.input-tab').forEach(item=>item.classList.toggle('is-active',item===tab));
-    document.querySelectorAll('.review-input-panel').forEach(panel=>panel.hidden=panel.id!==tab.dataset.target);
-    document.querySelectorAll('.review-input-panel input,.review-input-panel textarea').forEach(field=>field.disabled=!field.closest('.review-input-panel').hidden);
+  const tabs = document.querySelectorAll('.input-tab');
+  const panels = document.querySelectorAll('.review-input-panel');
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    tabs.forEach(item => { const active = item === tab; item.classList.toggle('is-active', active); item.setAttribute('aria-pressed', String(active)); });
+    panels.forEach(panel => { panel.hidden = panel.id !== tab.dataset.target; panel.querySelectorAll('input,textarea').forEach(field => field.disabled = panel.hidden); });
   }));
-  document.querySelectorAll('.review-input-panel input,.review-input-panel textarea').forEach(field=>field.disabled=!field.closest('.review-input-panel').hidden);
+  const provider = document.getElementById('provider');
+  function updateProviderFields() {
+    document.querySelectorAll('.provider-settings').forEach(group => {
+      group.hidden = group.dataset.provider !== provider.value;
+      group.querySelectorAll('input').forEach(field => { field.disabled = group.hidden; field.required = !group.hidden && (provider.value === 'custom' || field.id === 'custom-key'); });
+    });
+  }
+  provider.addEventListener('change', updateProviderFields);
+  updateProviderFields();
+  panels.forEach(panel => panel.querySelectorAll('input,textarea').forEach(field => field.disabled = panel.hidden));
 </script>{% endblock %}

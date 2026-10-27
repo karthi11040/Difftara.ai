@@ -23,7 +23,8 @@ Open `http://localhost:8000/` (use `localhost` for Firebase Auth locally). Sign 
 
 ## AI code review and sign-in
 
-- The quick review page offers GenSeraLabs (server-side `GENSARA_API_KEY`) or a local Ollama model. GenSera receives the selected source code; choose Local to keep code on the machine.
+- The quick review page accepts pasted code, one source file, or a ZIP project. It checks Python syntax without executing code, then asks the selected AI provider for evidence-based findings, corrected snippets, and a verification guide. AI analysis is not exhaustive and suggestions need human review.
+- Choose GenSeraLabs (server-side `GENSARA_API_KEY` or a key entered for one review), a custom OpenAI chat-completions-compatible provider (HTTPS URL, model, and key entered for one review), or Ollama. Keys entered in the form are used for that request and are not saved. Hosted providers receive the submitted source; choose Ollama to keep it local.
 - Install [Ollama](https://ollama.com/download), then run `ollama pull qwen2.5-coder:1.5b-instruct`. The app calls Ollama at `http://127.0.0.1:11434`.
 - Email/password verification and Google/GitHub sign-in use Firebase Authentication. Enable Email/Password, Google, and GitHub under Firebase Console → Authentication → Sign-in method. For GitHub, set the GitHub OAuth app's Authorization callback URL to `https://difftara-ai-139ec.firebaseapp.com/__/auth/handler`, then enter that app's client ID and secret in Firebase. For Google, make sure the Firebase provider uses the web OAuth client ID/secret from the linked Google Cloud project. Add `localhost`, `127.0.0.1`, and deployed domains to Firebase's authorized domains. Django verifies Firebase ID tokens against Google's signing certificates; no service-account file is needed.
 - Set `GENSARA_API_KEY` in the server environment to enable GenSera. Never place it in JavaScript, templates, or Git.
