@@ -1,0 +1,49 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}CodeReview AI{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="{% url 'dashboard' %}"><span class="brand-mark" aria-hidden="true">CR</span><span>CodeReview <small>AI</small></span></a>
+      <p class="nav-label">Workspace</p>
+      <nav class="nav-list">
+        <a class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}is-active{% endif %}" href="{% url 'dashboard' %}"><span aria-hidden="true">⌂</span>Overview</a>
+        <a class="nav-item {% if request.resolver_match.url_name == 'project_list' or request.resolver_match.url_name == 'project_detail' or request.resolver_match.url_name == 'project_findings' or request.resolver_match.url_name == 'project_report' %}is-active{% endif %}" href="{% url 'project_list' %}"><span aria-hidden="true">▤</span>Projects</a>
+        <a class="nav-item {% if request.resolver_match.url_name == 'code_review' %}is-active{% endif %}" href="{% url 'code_review' %}"><span aria-hidden="true">⌘</span>Code review</a>
+        {% if user.is_mentor_user %}<a class="nav-item {% if request.resolver_match.url_name == 'upload_project' %}is-active{% endif %}" href="{% url 'upload_project' %}"><span aria-hidden="true">＋</span>New review</a>{% endif %}
+        <a class="nav-item {% if request.resolver_match.url_name == 'activities' %}is-active{% endif %}" href="{% url 'activities' %}"><span aria-hidden="true">◷</span>Activity</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="user-chip"><span class="avatar">{{ user.username|first|upper }}</span><span class="user-meta"><strong>{{ user.username }}</strong><small>{{ user.get_role_display }}</small></span></div>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="nav-item logout-link" type="submit"><span aria-hidden="true">↗</span>Sign out</button></form>
+      </div>
+    </aside>
+    <div class="main-column">
+      <header class="topbar"><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">☰</button><span class="topbar-label">Project review workspace</span><span class="role-tag">{{ user.get_role_display }}</span></header>
+      <main id="main-content" class="page-content">
+        {% if messages %}<div class="flash-stack" role="status">{% for message in messages %}<div class="flash flash-{{ message.tags }}">{{ message }}<button type="button" class="flash-close" aria-label="Dismiss message">×</button></div>{% endfor %}</div>{% endif %}
+        {% block content %}{% endblock %}
+      </main>
+      <footer class="page-footer"><span>CodeReview AI</span><span>Rule-based analysis · Source files are read, never executed</span></footer>
+    </div>
+  </div>
+  <script>
+    const menuButton = document.querySelector('.menu-toggle');
+    menuButton?.addEventListener('click', () => {
+      const open = document.body.classList.toggle('nav-open');
+      menuButton.setAttribute('aria-expanded', String(open));
+    });
+    document.querySelectorAll('.flash-close').forEach(button => button.addEventListener('click', () => button.parentElement.remove()));
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

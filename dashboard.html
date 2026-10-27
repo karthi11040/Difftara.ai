@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CodeReview AI - Glassmorphism Dashboard</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Geist & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+            },
+            glass: {
+              card: 'rgba(23, 27, 38, 0.65)',
+              border: 'rgba(255, 255, 255, 0.08)',
+              hover: 'rgba(255, 255, 255, 0.04)',
+              header: 'rgba(15, 19, 29, 0.75)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0a0e17;
+      color: #f1f5f9;
+      font-family: 'Geist', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .glass-panel {
+      background: rgba(18, 24, 38, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .glass-header {
+      background: rgba(11, 15, 25, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .glass-input {
+      background: rgba(10, 14, 24, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+    }
+
+    .glass-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.35);
+    }
+
+    .glow-blue {
+      box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.35);
+    }
+
+    .glow-rose {
+      box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.45);
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Pulse wave for audit live status */
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-ring {
+      animation: pulseRing 2.5s infinite ease-in-out;
+    }
+
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stream-item-new {
+      animation: fadeInSlide 0.35s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen relative selection:bg-blue-500/30 selection:text-blue-200">
+
+  <!-- Ambient Background Gradients with Subtle Rose Glow on Failure -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/15 rounded-full blur-[128px]"></div>
+    <div class="absolute top-1/4 right-0 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px]"></div>
+    <div class="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-rose-600/10 rounded-full blur-[160px]"></div>
+    <div class="absolute bottom-10 left-1/3 w-[600px] h-[350px] bg-cyan-500/10 rounded-full blur-[150px]"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:24px_24px]"></div>
+  </div>
+
+  <div class="relative z-10 flex flex-col min-h-screen">
+    <!-- Top Navigation Header -->
+    <header class="glass-header sticky top-0 z-50 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <!-- Logo -->
+        <a href="dashboard.html" class="flex items-center gap-3 group">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-transform">
+            <i data-lucide="shield-check" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5 font-bold tracking-tight text-white">
+              <span>CodeReview</span>
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">AI</span>
+            </div>
+            <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400 -mt-0.5">Neural Audit Engine</div>
+          </div>
+        </a>
+
+        <!-- Project / Branch Context Selector -->
+        <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/5 text-xs text-slate-300 hover:bg-white/[0.06] cursor-pointer transition-all">
+          <i data-lucide="building-2" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>Acme Corp</span>
+          <span class="text-slate-600">/</span>
+          <span class="text-blue-400 font-mono">Core-API</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500 ml-1"></i>
+        </div>
+
+        <!-- Global AST Search Bar -->
+        <div class="relative w-80 hidden lg:block">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input
+            id="globalSearchInput"
+            type="text"
+            placeholder="Search AST rules, hash, author..."
+            class="w-full glass-input text-xs rounded-lg pl-9 pr-12 py-2 text-slate-200 placeholder-slate-500 outline-none transition-all"
+            oninput="handleSearch(this.value)"
+          />
+          <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono px-1.5 py-0.5 bg-white/10 rounded border border-white/10 text-slate-400">⌘K</span>
+        </div>
+      </div>
+
+      <!-- Navigation & Profile Actions -->
+      <div class="flex items-center gap-4">
+        <nav class="hidden md:flex items-center gap-1 text-xs font-medium">
+          <a href="dashboard.html" class="px-3 py-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30">Dashboard</a>
+          <a href="#projectsTableSection" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">Projects</a>
+          <button onclick="openThresholdsModal()" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">Rule Engine</button>
+          <button onclick="openTerminalModal()" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">Audit Stream</button>
+          <button onclick="toggleNotificationPanel()" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all">Alerts</button>
+        </nav>
+
+        <div class="h-4 w-px bg-white/10 hidden md:block"></div>
+
+        <!-- Operational Status Badge with Warning -->
+        <div class="flex items-center gap-2 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-400 font-mono">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+          <span class="hidden sm:inline">1 INCIDENT DETECTED</span>
+        </div>
+
+        <!-- Notification Bell -->
+        <div class="relative">
+          <button id="notificationBtn" onclick="toggleNotificationPanel()" class="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-all" title="Notifications">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span id="notifBadge" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          </button>
+
+          <!-- Notification Dropdown Flyout -->
+          <div id="notificationPanel" class="hidden absolute right-0 mt-2 w-80 glass-panel rounded-xl p-3 shadow-2xl z-50 text-xs border border-white/10">
+            <div class="flex items-center justify-between pb-2 border-b border-white/10 font-mono text-[11px] text-slate-300">
+              <span class="text-rose-400 font-bold flex items-center gap-1.5">
+                <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i> ACTIVE INCIDENTS
+              </span>
+              <button onclick="markAllNotifsRead()" class="text-blue-400 hover:underline text-[10px]">Mark read</button>
+            </div>
+            <div class="mt-2 space-y-2">
+              <div class="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30">
+                <div class="text-rose-400 font-bold text-[11px] flex items-center justify-between">
+                  <span>Critical Audit Failure</span>
+                  <span class="text-slate-500 font-mono text-[10px]">Just now</span>
+                </div>
+                <div class="text-slate-300 text-[11px] mt-0.5">Autonomous Vehicle LiDAR Pipeline failed memory safety check (Score: 41%).</div>
+              </div>
+              <div class="p-2 rounded bg-white/[0.03] border border-white/5">
+                <div class="text-emerald-400 font-semibold text-[11px] flex items-center justify-between">
+                  <span>Review Passed</span>
+                  <span class="text-slate-500 font-mono text-[10px]">2m ago</span>
+                </div>
+                <div class="text-slate-300 text-[11px] mt-0.5">Bug Tracker API scored 95% compliance.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Profile Avatar & Dropdown -->
+        <div class="relative flex items-center gap-2.5 pl-2">
+          <button onclick="toggleProfileMenu()" class="w-8 h-8 rounded-lg bg-gradient-to-tr from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center font-bold text-xs text-slate-200 hover:border-blue-500/40 transition-all" title="User Menu">
+            SJ
+          </button>
+          <div id="profileMenu" class="hidden absolute right-0 top-11 w-48 glass-panel rounded-xl p-2 shadow-2xl z-50 text-xs border border-white/10">
+            <div class="px-2 py-1.5 border-b border-white/10">
+              <div class="font-semibold text-white">Sanjay S</div>
+              <div class="text-[10px] font-mono text-cyan-400">Universal Admin</div>
+            </div>
+            <div class="py-1">
+              <a href="#" class="block px-2 py-1.5 rounded hover:bg-white/5 text-slate-300 hover:text-white transition-all">Account Settings</a>
+              <a href="login.html" class="block px-2 py-1.5 rounded hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all">Sign Out</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 px-6 py-6 max-w-[1680px] w-full mx-auto space-y-6">
+
+      <!-- Page Hero Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-2xl font-bold tracking-tight text-white">Code Intelligence Dashboard</h1>
+            <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">SRS v2.4.9</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Continuous Static Analysis, Abstract Syntax Tree inspection & Compliance monitoring.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button onclick="exportInsights()" class="px-3.5 py-2 rounded-lg glass-panel text-xs font-medium text-slate-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-all">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export Insights</span>
+          </button>
+          <button onclick="openUploadModal()" class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white text-xs font-medium shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Upload New Project</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CRITICAL INCIDENT BANNER (Attention Grabber for Failed Project) -->
+      <div id="criticalIncidentBanner" class="glass-panel rounded-2xl p-4 border border-rose-500/40 bg-gradient-to-r from-rose-950/40 via-red-950/20 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4 glow-rose animate-pulse">
+        <div class="flex items-center gap-3.5">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 flex items-center justify-center shadow-lg shadow-rose-500/20 flex-shrink-0">
+            <i data-lucide="flame" class="w-5 h-5 text-rose-400"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold text-rose-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span> CRITICAL AUDIT FAILURE DETECTED
+              </span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">SCORE: 41% (3 BLOCKED)</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">
+              Project <span class="text-white font-semibold underline decoration-rose-500/80">Autonomous Vehicle LiDAR & Telemetry Pipeline</span> failed 3 high-severity safety checks (buffer overflow & race condition).
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2.5 flex-shrink-0">
+          <button onclick="setFilter('failed')" class="px-3.5 py-2 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-lg shadow-rose-500/30 flex items-center gap-1.5 transition-all">
+            <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+            <span>Filter Failed Project</span>
+          </button>
+          <button onclick="openTerminalModal()" class="px-3.5 py-2 rounded-lg glass-panel hover:bg-white/5 text-rose-300 hover:text-white text-xs font-medium border border-rose-500/30 transition-all flex items-center gap-1.5">
+            <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+            <span>Terminal Trace</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Key Metric Tiles -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Metric 1: Total Projects -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-blue-500/30 transition-all">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">TOTAL MONITORED PROJECTS</span>
+            <div class="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-105 transition-transform">
+              <i data-lucide="folder-git2" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div id="statTotalProjects" class="text-3xl font-bold font-mono text-white">27</div>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span class="text-slate-400">22 active</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-rose-400 font-semibold flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> 1 failed</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-slate-400">4 archived</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 2: Completed Reviews -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group hover:border-cyan-500/30 transition-all">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">COMPLETED REVIEWS</span>
+            <div class="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div id="statCompletedReviews" class="text-3xl font-bold font-mono text-white">26</div>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]">96.3% Rate</span>
+              <span class="text-slate-400 font-mono">Avg Latency: 1.4s</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-slate-400 font-mono">0 queue</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 3: Compliance Gauge Ring -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group glow-cyan hover:border-cyan-400/40 transition-all">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">AVG COMPLIANCE SCORE</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] font-mono">GRADE A</span>
+              <div class="w-7 h-7 rounded-full border-2 border-cyan-400/80 flex items-center justify-center text-[10px] font-mono text-cyan-300">
+                91
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex items-baseline justify-between">
+            <div>
+              <div class="text-3xl font-bold font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-400">91%</div>
+              <div class="text-xs text-emerald-400 font-mono mt-1">+6% vs last sprint</div>
+            </div>
+            <div class="text-[11px] font-mono text-slate-400">SRS Spec v2.4</div>
+          </div>
+        </div>
+
+        <!-- Metric 4: Active Rule Violations (Highlighted in Rose for Failed Project) -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden group glow-rose hover:border-rose-500/40 transition-all">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-mono uppercase tracking-wider text-slate-400">ACTIVE RULE VIOLATIONS</span>
+            <div class="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 group-hover:scale-105 transition-transform">
+              <i data-lucide="alert-octagon" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div id="statActiveViolations" class="text-3xl font-bold font-mono text-white flex items-baseline gap-2">
+              <span>7</span>
+              <span class="text-xs font-normal text-rose-400 font-sans">(1 Critical Failure)</span>
+            </div>
+            <div class="flex items-center gap-2 mt-2 text-xs">
+              <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono font-bold glow-rose animate-pulse">3 crit</span>
+              <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 font-mono">1 warn</span>
+              <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">3 info</span>
+              <button onclick="setFilter('failed')" class="text-xs text-rose-400 hover:underline ml-auto flex items-center font-semibold">Inspect <i data-lucide="arrow-right" class="w-3 h-3 ml-0.5"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dual Column Layout (Projects Data Table + Live Stream) -->
+      <div id="projectsTableSection" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left 8 Cols: Submitted Projects Data Table -->
+        <div class="lg:col-span-8 glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div>
+            <!-- Table Header Bar with Failed Filter Pill -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/5">
+              <div class="flex items-center gap-3">
+                <h2 class="text-base font-semibold text-white">Submitted Projects</h2>
+                <span id="projectCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-white/5 text-slate-400 border border-white/10">27 Total</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex rounded-lg bg-white/5 p-1 border border-white/5 text-xs font-mono">
+                  <button id="filterAllBtn" onclick="setFilter('all')" class="px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 transition-all font-semibold">All (27)</button>
+                  <button id="filterPassedBtn" onclick="setFilter('passed')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition-all">Passed</button>
+                  <button id="filterNeedsReviewBtn" onclick="setFilter('needs_review')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white transition-all">Needs Review</button>
+                  <!-- Failed Filter Button with glowing red indicator -->
+                  <button id="filterFailedBtn" onclick="setFilter('failed')" class="px-2.5 py-1 rounded text-rose-400 hover:text-white hover:bg-rose-500/10 transition-all flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+                    <span>Failed (1)</span>
+                  </button>
+                </div>
+                <button onclick="toggleSortOrder()" class="p-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-slate-400 hover:text-white transition-all" title="Sort Projects">
+                  <i data-lucide="filter" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto min-h-[350px]">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-slate-400 font-mono text-[11px] uppercase tracking-wider border-b border-white/5">
+                    <th class="py-3 px-3">Project Name / Repository</th>
+                    <th class="py-3 px-3">Commit & Branch</th>
+                    <th class="py-3 px-3">Auditor</th>
+                    <th class="py-3 px-3 text-center">Score</th>
+                    <th class="py-3 px-3">Issues</th>
+                    <th class="py-3 px-3 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="projectsTableBody" class="divide-y divide-white/5 font-sans">
+                  <!-- Dynamically populated via JavaScript for pagination, search, and live filter -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="flex items-center justify-between pt-4 border-t border-white/5 text-xs text-slate-400 font-mono">
+            <div id="paginationSummary">Showing <span class="text-white font-medium">1 to 5</span> of <span class="text-white font-medium">27</span> projects</div>
+            <div id="paginationControls" class="flex items-center gap-1">
+              <!-- Dynamically populated buttons -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 4 Cols: Real-Time Glass Audit Stream -->
+        <div class="lg:col-span-4 glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <!-- Stream Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-white/5">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono">LIVE STREAM</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="streamPingBadge" class="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">12 ms ping</span>
+                <button onclick="toggleStreamSimulation()" id="streamToggleBtn" class="text-slate-400 hover:text-white text-[11px] font-mono" title="Pause / Resume Live Events">
+                  <i data-lucide="pause" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Tags -->
+            <div class="flex flex-wrap gap-1.5 font-mono text-[10px]">
+              <button onclick="filterStream('all')" id="streamFilterAll" class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">All (35)</button>
+              <button onclick="filterStream('Security')" id="streamFilterSecurity" class="px-2 py-0.5 rounded bg-white/5 text-slate-400 hover:text-white border border-white/5">Security</button>
+              <button onclick="filterStream('SRS Rules')" id="streamFilterSRS" class="px-2 py-0.5 rounded bg-white/5 text-slate-400 hover:text-white border border-white/5">SRS Rules</button>
+              <button onclick="filterStream('AST Errors')" id="streamFilterAST" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">AST Errors</button>
+            </div>
+
+            <!-- Audit Stream Cards Container -->
+            <div id="auditStreamContainer" class="space-y-2.5 max-h-[460px] overflow-y-auto pr-1">
+              <!-- Stream items inserted here -->
+            </div>
+
+            <!-- Launch Terminal Button -->
+            <button onclick="openTerminalModal()" class="w-full py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-xs font-mono flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+              <span>Launch Real-Time Audit Terminal →</span>
+            </button>
+          </div>
+
+          <!-- Cluster AST Workers Monitor -->
+          <div class="mt-4 pt-4 border-t border-white/5">
+            <div class="flex items-center justify-between text-xs font-mono mb-2">
+              <span class="text-slate-400 text-[11px]">CLUSTER AST WORKERS</span>
+              <span class="text-emerald-400 font-semibold text-[11px]">8 / 8 Online</span>
+            </div>
+            <div class="grid grid-cols-8 gap-1.5">
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #1: Idle"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #2: Parsing AST"></div>
+              <div class="h-1.5 rounded-full bg-rose-400 shadow-sm shadow-rose-400/80 animate-pulse" title="Worker #3: Handling SIGSEGV Exception"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #4: AST Lint"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #5: Idle"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #6: Active Review"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #7: Idle"></div>
+              <div class="h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" title="Worker #8: Security Scanner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Neural Rule Optimizer Active Banner -->
+      <div class="glass-panel rounded-xl p-4 flex items-center justify-between border-blue-500/20 bg-gradient-to-r from-blue-900/10 via-transparent to-cyan-900/10">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-white">Neural Rule Optimizer Active</div>
+            <div class="text-[11px] text-slate-400">Automated AST heuristic matching scanned 142,890 tokens in 1.4s. 1 blocking issue trapped.</div>
+          </div>
+        </div>
+        <button onclick="openThresholdsModal()" class="text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1">
+          Configure Thresholds <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Glass Footer -->
+    <footer class="mt-auto border-t border-white/5 py-4 px-6 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3 font-mono">
+      <div class="flex items-center gap-4 flex-wrap">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>SRS Engine v2.4.9 (Build #7819)</span>
+        </span>
+        <span>•</span>
+        <span>Cluster Region: us-east-ai-primary</span>
+        <span>•</span>
+        <span>AST Runtime: Rust-LLVM 17.0.2</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="#" class="hover:text-slate-400 transition-colors">API Docs</a>
+        <a href="#" class="hover:text-slate-400 transition-colors">Security Ruleset</a>
+        <a href="#" class="hover:text-slate-400 transition-colors">Telemetry Specs</a>
+        <span>© 2026 CodeReview AI Inc.</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal 1: Real-Time Audit Terminal -->
+  <div id="terminalModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+    <div class="glass-panel w-full max-w-4xl rounded-2xl overflow-hidden border border-blue-500/30 shadow-2xl flex flex-col max-h-[85vh]">
+      <!-- Terminal Header -->
+      <div class="px-4 py-3 bg-black/40 border-b border-white/10 flex items-center justify-between font-mono text-xs">
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1.5">
+            <span onclick="closeTerminalModal()" class="w-3 h-3 rounded-full bg-red-500/80 hover:bg-red-400 cursor-pointer inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+          </div>
+          <span class="text-slate-400 ml-2">daemon://ast-worker-03.cluster.ai [PID 41908] - CRASH TRACE</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-rose-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span> INCIDENT ACTIVE</span>
+          <button onclick="closeTerminalModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+      <!-- Terminal Log Body -->
+      <div id="terminalBody" class="p-4 overflow-y-auto font-mono text-xs text-slate-300 space-y-1.5 bg-[#070b12] flex-1 min-h-[350px]">
+        <div class="text-slate-500">// Neural CodeReview AI - Live AST Stream Terminal initialized</div>
+        <div class="text-blue-400">[09:52:10] Loading abstract syntax tree parser for Python/Django & Rust...</div>
+        <div class="text-emerald-400">[09:52:11] Connected to worker cluster: 8 nodes operational.</div>
+        <div class="text-slate-300">[09:52:12] AST Rule Engine: Loaded 48 SRS compliance rules.</div>
+        <div class="text-cyan-400">[09:52:13] Ingestion: Scanned Bug Tracker API (142,890 tokens in 1.4s)</div>
+        <div class="text-emerald-300">[09:52:14] Verification complete: Score 95% Pass (0 crit / 2 minor)</div>
+        <div class="text-rose-400 font-bold bg-rose-950/40 p-2 rounded border border-rose-500/30">
+          [09:53:02] [FATAL_AST_CRASH] Project: Autonomous Vehicle LiDAR & Telemetry Pipeline<br/>
+          &gt; Exception: SIGSEGV (signal 11) in lidar_pointcloud_parser()<br/>
+          &gt; Location: sensors/lidar.py:L142-L178<br/>
+          &gt; Cause: Unchecked raw pointer dereference on null telemetry buffer<br/>
+          &gt; Audit Score: 41% [AUDIT FAILED] - 3 Critical Security Violations
+        </div>
+      </div>
+      <!-- Terminal Input Command Bar -->
+      <div class="p-3 bg-black/60 border-t border-white/10 flex items-center gap-2 font-mono text-xs">
+        <span class="text-cyan-400 font-bold">$</span>
+        <input id="termCommandInput" type="text" placeholder="Type command (e.g., 'scan --all', 'rules --list', 'clear') and press Enter..." class="flex-1 bg-transparent text-slate-200 outline-none placeholder-slate-600" onkeydown="handleTerminalCommand(event)" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Upload New Project Modal -->
+  <div id="uploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+    <div class="glass-panel w-full max-w-xl rounded-2xl p-6 border border-blue-500/30 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Upload New Project</h3>
+            <p class="text-[11px] text-slate-400">Submit source code ZIP archive for immediate AST neural audit.</p>
+          </div>
+        </div>
+        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium text-slate-300 mb-1">Project Name</label>
+          <input id="uploadProjectName" type="text" placeholder="e.g. Real-Time Telemetry Microservice" class="w-full glass-input rounded-lg px-3 py-2 text-slate-200 outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Branch / Hash</label>
+            <input id="uploadProjectBranch" type="text" placeholder="main:7a92b1" class="w-full glass-input rounded-lg px-3 py-2 text-slate-200 outline-none font-mono" />
+          </div>
+          <div>
+            <label class="block font-medium text-slate-300 mb-1">Auditor / Author</label>
+            <input id="uploadProjectAuditor" type="text" placeholder="@author" value="@sanjays" class="w-full glass-input rounded-lg px-3 py-2 text-slate-200 outline-none font-mono" />
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-300 mb-1">Source ZIP Archive</label>
+          <div class="border-2 border-dashed border-white/10 hover:border-blue-500/40 rounded-xl p-6 text-center cursor-pointer transition-all bg-white/[0.01]" onclick="document.getElementById('zipFileInput').click()">
+            <i data-lucide="file-archive" class="w-8 h-8 text-blue-400 mx-auto mb-2"></i>
+            <div id="uploadFileText" class="text-slate-300 font-medium">Click or Drag & Drop project ZIP here</div>
+            <div class="text-[10px] text-slate-500 mt-1">Accepts .zip archives up to 50MB</div>
+            <input type="file" id="zipFileInput" class="hidden" accept=".zip" onchange="handleFileSelect(this)" />
+          </div>
+        </div>
+      </div>
+
+  <!-- Modal 4: Comprehensive Report Preview Modal (Automatic vs Manual Score) -->
+  <div id="reportPreviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div class="glass-panel w-full max-w-3xl rounded-2xl p-6 border border-blue-500/30 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <!-- Header with Project Info -->
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div id="reportModalIcon" class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">
+            <i data-lucide="file-contract" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="reportModalProjectName" class="text-base font-bold text-white">Project Name</span>
+              <span id="reportModalStatusBadge" class="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold">Passed</span>
+            </div>
+            <div class="text-[11px] font-mono text-slate-400 mt-0.5">
+              <span id="reportModalBranch">main:c84f29</span> • Auditor: <span id="reportModalAuditor">@auditor</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeReportPreviewModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <!-- Mode Selector: Auto vs Manual vs Compare -->
+      <div class="flex rounded-xl bg-black/40 p-1 border border-white/10 text-xs font-mono justify-center">
+        <button id="modalTabAuto" onclick="switchReportModalMode('auto')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+          <span>Automatic AI Score</span>
+        </button>
+        <button id="modalTabManual" onclick="switchReportModalMode('manual')" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+          <span>Manual Evaluated Score</span>
+        </button>
+        <button id="modalTabCompare" onclick="switchReportModalMode('compare')" class="flex-1 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold flex items-center justify-center gap-1.5 transition-all">
+          <i data-lucide="scale" class="w-3.5 h-3.5"></i>
+          <span>Side-by-Side</span>
+        </button>
+      </div>
+
+      <!-- Dual Score Banner -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+        <div id="modalBoxAuto" class="p-3.5 rounded-xl bg-cyan-950/20 border border-cyan-500/30 glow-cyan">
+          <div class="text-cyan-400 text-[10px] uppercase font-bold flex items-center gap-1">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> AUTOMATIC AI SCORE
+          </div>
+          <div id="modalAutoScoreDisplay" class="text-3xl font-bold text-cyan-300 mt-1">95%</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">AST Static Heuristics</div>
+        </div>
+
+        <div id="modalBoxManual" class="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30">
+          <div class="text-emerald-400 text-[10px] uppercase font-bold flex items-center gap-1">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i> MANUAL ADJUSTED SCORE
+          </div>
+          <div id="modalManualScoreDisplay" class="text-3xl font-bold text-emerald-300 mt-1">95%</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Mentor Signed-Off</div>
+        </div>
+
+        <div id="modalBoxDelta" class="p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
+          <div class="text-slate-400 text-[10px] uppercase font-bold">SCORE DELTA</div>
+          <div id="modalDeltaDisplay" class="text-3xl font-bold text-blue-400 mt-1">0%</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Synchronized with AI</div>
+        </div>
+      </div>
+
+      <!-- Interactive Category Score Adjustment Sliders (Manual vs Auto Simulator) -->
+      <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3 text-xs font-mono">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-bold flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-3.5 h-3.5 text-blue-400"></i>
+            <span>Interactive Category Weighting & Score Adjuster</span>
+          </span>
+          <button onclick="resetModalScores()" class="text-[10px] text-blue-400 hover:underline">Reset to Default</button>
+        </div>
+
+        <!-- Compliance Slider -->
+        <div>
+          <div class="flex justify-between text-slate-300 mb-1">
+            <span>Requirement Compliance (60%)</span>
+            <span id="sliderCompVal" class="text-cyan-400 font-bold">95%</span>
+          </div>
+          <input id="sliderComp" type="range" min="0" max="100" value="95" class="w-full accent-cyan-400" oninput="updateLiveModalScores()" />
+        </div>
+
+        <!-- Quality Slider -->
+        <div>
+          <div class="flex justify-between text-slate-300 mb-1">
+            <span>Code Quality (20%)</span>
+            <span id="sliderQualVal" class="text-blue-400 font-bold">90%</span>
+          </div>
+          <input id="sliderQual" type="range" min="0" max="100" value="90" class="w-full accent-blue-400" oninput="updateLiveModalScores()" />
+        </div>
+
+        <!-- Testing Slider -->
+        <div>
+          <div class="flex justify-between text-slate-300 mb-1">
+            <span>Testing Analysis (10%)</span>
+            <span id="sliderTestVal" class="text-indigo-400 font-bold">100%</span>
+          </div>
+          <input id="sliderTest" type="range" min="0" max="100" value="100" class="w-full accent-indigo-400" oninput="updateLiveModalScores()" />
+        </div>
+
+        <!-- Doc Slider -->
+        <div>
+          <div class="flex justify-between text-slate-300 mb-1">
+            <span>Documentation (10%)</span>
+            <span id="sliderDocVal" class="text-teal-400 font-bold">100%</span>
+          </div>
+          <input id="sliderDoc" type="range" min="0" max="100" value="100" class="w-full accent-teal-400" oninput="updateLiveModalScores()" />
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="flex items-center justify-between pt-3 border-t border-white/10 text-xs font-mono">
+        <span class="text-slate-400">Formula: <code class="text-slate-300">Comp*0.6 + Qual*0.2 + Test*0.1 + Doc*0.1</code></span>
+        <div class="flex items-center gap-2">
+          <button onclick="closeReportPreviewModal()" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">Close</button>
+          <button onclick="applyManualAdjustment()" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Save Manual Adjustment</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal 3: Configure Thresholds Modal -->
+  <div id="thresholdsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+    <div class="glass-panel w-full max-w-lg rounded-2xl p-6 border border-cyan-500/30 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Neural Rule Engine Thresholds</h3>
+            <p class="text-[11px] text-slate-400">Configure AST static heuristics, token recursion depth, and severity tolerances.</p>
+          </div>
+        </div>
+        <button onclick="closeThresholdsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <div class="flex justify-between text-slate-300 font-medium mb-1">
+            <span>AST Heuristic Sensitivity</span>
+            <span id="sensitivityVal" class="font-mono text-cyan-400">85%</span>
+          </div>
+          <input type="range" min="50" max="100" value="85" class="w-full accent-cyan-400" oninput="document.getElementById('sensitivityVal').innerText = this.value + '%'" />
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-300 font-medium mb-1">
+            <span>AST Recursion Depth Limit</span>
+            <span id="depthVal" class="font-mono text-blue-400">32 Levels</span>
+          </div>
+          <input type="range" min="8" max="64" value="32" class="w-full accent-blue-400" oninput="document.getElementById('depthVal').innerText = this.value + ' Levels'" />
+        </div>
+        <div>
+          <div class="flex justify-between text-slate-300 font-medium mb-1">
+            <span>Strict Compliance Tolerance</span>
+            <span id="toleranceVal" class="font-mono text-emerald-400">Grade A (>= 90%)</span>
+          </div>
+          <input type="range" min="70" max="95" value="90" class="w-full accent-emerald-400" oninput="document.getElementById('toleranceVal').innerText = 'Grade A (>= ' + this.value + '%)'" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+        <button onclick="closeThresholdsModal()" class="px-4 py-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all text-xs">Cancel</button>
+        <button onclick="saveThresholds()" class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    // 27 Full Projects Dataset (Including the Attention-Grabbing Failed Project at Index 0)
+    const ALL_PROJECTS = [
+      {
+        id: 27,
+        name: "Autonomous Vehicle LiDAR & Telemetry Pipeline",
+        branch: "crash/segfault:dead01",
+        auditor: "@dev_alex",
+        date: "Just now",
+        score: 41,
+        status: "failed",
+        issues: "3 crit / 4 errors",
+        icon: "flame",
+        color: "rose"
+      },
+      { id: 1, name: "Bug Tracker & Agile Sprint Kanban API", branch: "main:c84f29", auditor: "@neha_patel", date: "Oct 13, 2026", score: 95, status: "passed", issues: "0 crit / 2 minor", icon: "code-2", color: "blue" },
+      { id: 2, name: "Fitness Tracking & Workout Analytics Engine", branch: "release/v1.2:e4b102", auditor: "@vikram_singh", date: "Oct 13, 2026", score: 96, status: "passed", issues: "0 crit / 1 minor", icon: "activity", color: "cyan" },
+      { id: 3, name: "Video On Demand Streaming & Transcoding API", branch: "feat/hls-chunks:9a82c1", auditor: "@priya_sharma", date: "Oct 13, 2026", score: 81, status: "needs_review", issues: "4 warn", icon: "video", color: "amber" },
+      { id: 4, name: "Recipe Sharing & Meal Planner API", branch: "fix/nutrition-calc:3f71d5", auditor: "@arun_kumar", date: "Oct 13, 2026", score: 93, status: "passed", issues: "0 crit / 2 minor", icon: "utensils", color: "indigo" },
+      { id: 5, name: "Pharmacy Inventory & Prescription Verification", branch: "security/audit-patch:17ac04", auditor: "@student", date: "Oct 13, 2026", score: 92, status: "passed", issues: "0 crit / 1 minor", icon: "pill", color: "teal" },
+      { id: 6, name: "E-Commerce Shopping Cart & Checkout API", branch: "feat/stripe-v2:6d901a", auditor: "@arun_kumar", date: "Oct 12, 2026", score: 91, status: "passed", issues: "0 crit / 1 minor", icon: "shopping-cart", color: "blue" },
+      { id: 7, name: "Hospital Patient Portal & Appointment API", branch: "main:8b14e2", auditor: "@priya_sharma", date: "Oct 12, 2026", score: 82, status: "needs_review", issues: "1 crit / 3 warn", icon: "heart-pulse", color: "amber" },
+      { id: 8, name: "FinTech Wallet & Payment Gateway Service", branch: "feat/p2p-ledger:c031ef", auditor: "@vikram_singh", date: "Oct 11, 2026", score: 94, status: "passed", issues: "0 crit / 1 minor", icon: "wallet", color: "emerald" },
+      { id: 9, name: "Smart IoT Device Telemetry Collector", branch: "iot/mqtt-stream:247db1", auditor: "@neha_patel", date: "Oct 11, 2026", score: 97, status: "passed", issues: "0 crit / 0 minor", icon: "cpu", color: "cyan" },
+      { id: 10, name: "Learning Management System Course API", branch: "feat/video-progress:118af4", auditor: "@student", date: "Oct 10, 2026", score: 89, status: "passed", issues: "0 crit / 2 minor", icon: "graduation-cap", color: "indigo" },
+      { id: 11, name: "Real Estate Property Listing & Valuation", branch: "feat/geo-spatial:5a932b", auditor: "@arun_kumar", date: "Oct 10, 2026", score: 88, status: "passed", issues: "0 crit / 3 minor", icon: "home", color: "blue" },
+      { id: 12, name: "Customer Support Helpdesk Ticket Router", branch: "feat/sla-engine:92dc01", auditor: "@priya_sharma", date: "Oct 09, 2026", score: 95, status: "passed", issues: "0 crit / 1 minor", icon: "headphones", color: "teal" },
+      { id: 13, name: "Supply Chain Logistics Fleet Tracker", branch: "fleet/route-opt:7e45b8", auditor: "@vikram_singh", date: "Oct 09, 2026", score: 93, status: "passed", issues: "0 crit / 2 minor", icon: "truck", color: "emerald" },
+      { id: 14, name: "HR & Employee Payroll Microservice", branch: "fix/tax-brackets:6c1209", auditor: "@neha_patel", date: "Oct 08, 2026", score: 90, status: "passed", issues: "0 crit / 2 minor", icon: "users", color: "indigo" },
+      { id: 15, name: "Restaurant Online Table Reservation System", branch: "feat/slot-locks:0df182", auditor: "@student", date: "Oct 08, 2026", score: 92, status: "passed", issues: "0 crit / 1 minor", icon: "calendar", color: "cyan" },
+      { id: 16, name: "Cloud Storage File Vault & Sharing API", branch: "feat/s3-multipart:39aa11", auditor: "@arun_kumar", date: "Oct 07, 2026", score: 84, status: "needs_review", issues: "1 crit / 2 warn", icon: "cloud", color: "amber" },
+      { id: 17, name: "Event Booking & Digital Ticket Scanner", branch: "feat/qr-sign:77b409", auditor: "@priya_sharma", date: "Oct 07, 2026", score: 96, status: "passed", issues: "0 crit / 1 minor", icon: "ticket", color: "purple" },
+      { id: 18, name: "Ride Hailing Driver Dispatch & Fare Calc", branch: "dispatch/geo-h3:89cc12", auditor: "@vikram_singh", date: "Oct 06, 2026", score: 87, status: "passed", issues: "0 crit / 3 minor", icon: "navigation", color: "blue" },
+      { id: 19, name: "Social Networking Microblogging Feed API", branch: "feat/fanout-feed:44ef91", auditor: "@neha_patel", date: "Oct 06, 2026", score: 91, status: "passed", issues: "0 crit / 2 minor", icon: "share-2", color: "teal" },
+      { id: 20, name: "Online Job Board & Resume Parser Service", branch: "ml/pdf-extract:61ba33", auditor: "@student", date: "Oct 05, 2026", score: 90, status: "passed", issues: "0 crit / 2 minor", icon: "briefcase", color: "cyan" },
+      { id: 21, name: "Digital Identity KYC Verification Backend", branch: "sec/doc-ocr:20ce55", auditor: "@arun_kumar", date: "Oct 05, 2026", score: 98, status: "passed", issues: "0 crit / 0 minor", icon: "fingerprint", color: "emerald" },
+      { id: 22, name: "Cryptocurrency Portfolio & Price Alert API", branch: "feat/ws-ticker:15ff89", auditor: "@priya_sharma", date: "Oct 04, 2026", score: 86, status: "needs_review", issues: "2 warn", icon: "coins", color: "amber" },
+      { id: 23, name: "Hotel Booking & Dynamic Room Pricing", branch: "pricing/surge-v1:98ac34", auditor: "@vikram_singh", date: "Oct 04, 2026", score: 89, status: "passed", issues: "0 crit / 2 minor", icon: "building", color: "blue" },
+      { id: 24, name: "Music Streaming & Audio Fingerprint API", branch: "feat/chroma-ast:40de76", auditor: "@neha_patel", date: "Oct 03, 2026", score: 94, status: "passed", issues: "0 crit / 1 minor", icon: "music", color: "purple" },
+      { id: 25, name: "Automated CI/CD Pipeline Build Agent", branch: "agent/sandbox-run:51bb00", auditor: "@student", date: "Oct 03, 2026", score: 95, status: "passed", issues: "0 crit / 1 minor", icon: "terminal", color: "cyan" },
+      { id: 26, name: "Library Management API", branch: "legacy/v1.0:31aa90", auditor: "@student", date: "Oct 02, 2026", score: 88, status: "passed", issues: "0 crit / 2 minor", icon: "book-open", color: "indigo" }
+    ];
+
+    // State Variables
+    let currentFilter = 'all'; // 'all', 'passed', 'needs_review', 'failed'
+    let currentSearch = '';
+    let currentPage = 1;
+    const pageSize = 5;
+    let streamFilter = 'all';
+    let isStreamRunning = true;
+    let streamInterval = null;
+
+    // Stream Events Data (Crash Event on Top)
+    const STREAM_EVENTS = [
+      { type: "AST_CRASH", category: "AST Errors", time: "09:53:02", project: "Autonomous Vehicle LiDAR & Telemetry Pipeline", score: "FAILED (41%)", detail: "SIGSEGV in lidar_pointcloud_parser() • 3 critical safety violations", badgeColor: "rose" },
+      { type: "REVIEW_RUN", category: "SRS Rules", time: "09:52:14", project: "Bug Tracker & Agile Sprint Kanban API", score: "95%", detail: "trigger: mentor • duration: 1.2s", badgeColor: "blue" },
+      { type: "UPLOAD_PROJECT", category: "Security", time: "09:52:08", project: "Bug Tracker & Agile Sprint Kanban API", score: "ZIP MD5 Verified", detail: "author: @neha_patel", badgeColor: "purple" },
+      { type: "SRS_WARN", category: "AST Errors", time: "09:51:44", project: "Video On Demand Streaming API", score: "Score: 81%", detail: "Daemon AST #882 • 4 non-blocking warnings", badgeColor: "amber" },
+      { type: "SECURITY_SCAN", category: "Security", time: "09:50:30", project: "FinTech Wallet & Payment Gateway", score: "100% Clean", detail: "No SQLi / XSS heuristics flagged", badgeColor: "emerald" },
+      { type: "AST_PARSE", category: "AST Errors", time: "09:49:12", project: "Hospital Patient Portal API", score: "Score: 82%", detail: "Missing encryption decorator at auth/tokens", badgeColor: "amber" }
+    ];
+
+    // Initialize Dashboard
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      renderTable();
+      renderStream();
+      startStreamSimulation();
+
+      // Keyboard Shortcut ⌘K / Ctrl+K
+      window.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+          e.preventDefault();
+          const searchInput = document.getElementById("globalSearchInput");
+          if (searchInput) searchInput.focus();
+        }
+        if (e.key === "Escape") {
+          closeTerminalModal();
+          closeUploadModal();
+          closeThresholdsModal();
+          closeAllDropdowns();
+        }
+      });
+    });
+
+    // Filter Table Handler
+    function setFilter(filter) {
+      currentFilter = filter;
+      currentPage = 1;
+
+      // Update active button styles
+      const btns = {
+        all: document.getElementById('filterAllBtn'),
+        passed: document.getElementById('filterPassedBtn'),
+        needs_review: document.getElementById('filterNeedsReviewBtn'),
+        failed: document.getElementById('filterFailedBtn')
+      };
+
+      Object.keys(btns).forEach(key => {
+        if (!btns[key]) return;
+        if (key === filter) {
+          if (key === 'failed') {
+            btns[key].className = "px-2.5 py-1 rounded bg-rose-500/25 text-rose-300 border border-rose-500/40 font-semibold shadow-sm shadow-rose-500/20 flex items-center gap-1.5";
+          } else {
+            btns[key].className = "px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 transition-all font-semibold";
+          }
+        } else {
+          if (key === 'failed') {
+            btns[key].className = "px-2.5 py-1 rounded text-rose-400 hover:text-white hover:bg-rose-500/10 transition-all flex items-center gap-1.5";
+          } else {
+            btns[key].className = "px-2.5 py-1 rounded text-slate-400 hover:text-white transition-all";
+          }
+        }
+      });
+
+      renderTable();
+    }
+
+    // Search Handler
+    function handleSearch(query) {
+      currentSearch = query.trim().toLowerCase();
+      currentPage = 1;
+      renderTable();
+    }
+
+    // Render Projects Table
+    function renderTable() {
+      const tbody = document.getElementById("projectsTableBody");
+      if (!tbody) return;
+
+      // Filter Projects
+      let filtered = ALL_PROJECTS.filter(p => {
+        const matchesFilter = (currentFilter === 'all') || (p.status === currentFilter);
+        const matchesSearch = !currentSearch ||
+          p.name.toLowerCase().includes(currentSearch) ||
+          p.branch.toLowerCase().includes(currentSearch) ||
+          p.auditor.toLowerCase().includes(currentSearch);
+        return matchesFilter && matchesSearch;
+      });
+
+      // Update badge count
+      const badge = document.getElementById("projectCountBadge");
+      if (badge) badge.innerText = `${filtered.length} Total`;
+
+      // Pagination Slicing
+      const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const paginated = filtered.slice(startIndex, startIndex + pageSize);
+
+      // Render Rows
+      if (paginated.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400 font-mono">
+              <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 text-slate-500"></i>
+              No matching projects found for "${currentSearch || currentFilter}"
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+      } else {
+        tbody.innerHTML = paginated.map(p => {
+          const isFailed = p.status === 'failed';
+          const isPassed = p.status === 'passed';
+
+          let scoreBadgeHtml = '';
+          let rowClass = 'hover:bg-white/[0.02] transition-colors group';
+          let actionBtnHtml = '';
+          let issueClass = 'text-slate-400';
+
+          if (isFailed) {
+            rowClass = 'bg-rose-500/[0.05] hover:bg-rose-500/[0.09] border-l-4 border-rose-500 transition-colors group';
+            scoreBadgeHtml = `
+              <span class="px-2.5 py-0.5 rounded-full border border-rose-500/40 bg-rose-500/25 text-rose-300 font-mono text-[11px] font-bold shadow-sm shadow-rose-500/30 flex items-center justify-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span> ${p.score}% Failed
+              </span>
+            `;
+            issueClass = 'text-rose-400 font-bold font-mono';
+            actionBtnHtml = `
+              <button onclick="inspectProject(${p.id})" class="px-2.5 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-semibold transition-colors flex items-center gap-1 ml-auto shadow-sm shadow-rose-500/20">
+                <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-rose-400"></i> Crash Log
+              </button>
+            `;
+          } else if (isPassed) {
+            scoreBadgeHtml = `<span class="px-2 py-0.5 rounded-full border border-emerald-500/25 bg-emerald-500/15 text-emerald-400 font-mono text-[11px] font-medium">${p.score}% Pass</span>`;
+            actionBtnHtml = `
+              <button onclick="inspectProject(${p.id})" class="px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 text-xs transition-colors hover:border-blue-500/40">
+                Reviewed
+              </button>
+            `;
+          } else {
+            scoreBadgeHtml = `<span class="px-2 py-0.5 rounded-full border border-amber-500/25 bg-amber-500/15 text-amber-300 font-mono text-[11px] font-medium">${p.score}% Attention</span>`;
+            issueClass = 'text-amber-300/90 font-semibold';
+            actionBtnHtml = `
+              <button onclick="inspectProject(${p.id})" class="px-2.5 py-1 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 text-xs transition-colors hover:border-blue-500/40">
+                Reviewed
+              </button>
+            `;
+          }
+
+          const colorMap = {
+            rose: 'bg-rose-500/20 text-rose-400 border-rose-500/40 group-hover:text-rose-300 glow-rose',
+            blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20 group-hover:text-blue-400',
+            cyan: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 group-hover:text-cyan-400',
+            amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20 group-hover:text-amber-400',
+            indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 group-hover:text-indigo-400',
+            teal: 'bg-teal-500/10 text-teal-400 border-teal-500/20 group-hover:text-teal-400',
+            emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 group-hover:text-emerald-400',
+            purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20 group-hover:text-purple-400',
+          };
+          const style = colorMap[p.color] || colorMap.blue;
+
+          return `
+            <tr class="${rowClass}">
+              <td class="py-3 px-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="p-1.5 rounded-lg border ${style}">
+                    <i data-lucide="${p.icon}" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-white group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                      <span>${p.name}</span>
+                      ${isFailed ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-mono bg-rose-500/30 text-rose-300 border border-rose-500/40 font-bold uppercase">FAILED</span>' : ''}
+                    </div>
+                    <div class="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+                      <i data-lucide="clock" class="w-3 h-3"></i> ${p.date}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="py-3 px-3 font-mono">
+                <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 ${isFailed ? 'text-rose-300 border-rose-500/30 bg-rose-500/10' : 'text-slate-300'} text-[11px]">${p.branch}</span>
+              </td>
+              <td class="py-3 px-3 text-slate-300 font-mono">${p.auditor}</td>
+              <td class="py-3 px-3 text-center">
+                ${scoreBadgeHtml}
+              </td>
+              <td class="py-3 px-3 font-mono ${issueClass}">${p.issues}</td>
+              <td class="py-3 px-3 text-right">
+                ${actionBtnHtml}
+              </td>
+            </tr>
+          `;
+        }).join('');
+        lucide.createIcons();
+      }
+
+      // Update Pagination Summary & Controls
+      const startItem = filtered.length === 0 ? 0 : startIndex + 1;
+      const endItem = Math.min(startIndex + pageSize, filtered.length);
+      const summary = document.getElementById("paginationSummary");
+      if (summary) {
+        summary.innerHTML = `Showing <span class="text-white font-medium">${startItem} to ${endItem}</span> of <span class="text-white font-medium">${filtered.length}</span> projects`;
+      }
+
+      renderPaginationControls(totalPages);
+    }
+
+    // Render Pagination Controls
+    function renderPaginationControls(totalPages) {
+      const controls = document.getElementById("paginationControls");
+      if (!controls) return;
+
+      let html = `
+        <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="px-2.5 py-1 rounded bg-white/[0.02] border border-white/5 text-slate-600 cursor-not-allowed"' : 'class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-slate-400 hover:text-white transition-all"'}>
+          Prev
+        </button>
+      `;
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+          html += `<button class="px-2.5 py-1 rounded bg-blue-500 text-white font-bold">${i}</button>`;
+        } else {
+          html += `<button onclick="goToPage(${i})" class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-slate-300 hover:text-white transition-all">${i}</button>`;
+        }
+      }
+
+      html += `
+        <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="px-2.5 py-1 rounded bg-white/[0.02] border border-white/5 text-slate-600 cursor-not-allowed"' : 'class="px-2.5 py-1 rounded bg-white/5 border border-white/5 text-slate-400 hover:text-white transition-all"'}>
+          Next
+        </button>
+      `;
+
+      controls.innerHTML = html;
+    }
+
+    function goToPage(page) {
+      const filteredCount = ALL_PROJECTS.filter(p => (currentFilter === 'all' || p.status === currentFilter)).length;
+      const totalPages = Math.ceil(filteredCount / pageSize) || 1;
+      if (page >= 1 && page <= totalPages) {
+        currentPage = page;
+        renderTable();
+      }
+    }
+
+    // Render Audit Stream
+    function renderStream() {
+      const container = document.getElementById("auditStreamContainer");
+      if (!container) return;
+
+      const filteredEvents = STREAM_EVENTS.filter(e => {
+        if (streamFilter === 'all') return true;
+        return e.category === streamFilter;
+      });
+
+      container.innerHTML = filteredEvents.map(e => {
+        const badgeColors = {
+          rose: "bg-rose-500/25 text-rose-300 border border-rose-500/40",
+          blue: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+          purple: "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+          amber: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+          emerald: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+        };
+        const badge = badgeColors[e.badgeColor] || badgeColors.blue;
+        const isCrash = e.type === 'AST_CRASH';
+
+        return `
+          <div class="p-3 rounded-xl ${isCrash ? 'bg-rose-950/20 border-rose-500/40 glow-rose' : 'bg-white/[0.02] border-white/5'} border text-xs font-mono space-y-1.5 hover:border-blue-500/30 transition-all stream-item-new">
+            <div class="flex items-center justify-between">
+              <span class="px-1.5 py-0.5 rounded text-[10px] ${badge} font-bold">[${e.type}]</span>
+              <span class="text-slate-500 text-[11px]">${e.time}</span>
+            </div>
+            <p class="text-slate-300 font-sans text-xs">
+              ${isCrash ? `<span class="text-rose-400 font-semibold">FATAL REVIEW CRASH:</span> <span class="text-white font-medium">${e.project}</span> scored <span class="text-rose-400 font-mono font-bold">${e.score}</span>` :
+                e.type === 'REVIEW_RUN' ? `Completed automated review for <span class="text-white font-medium">${e.project}</span> with score <span class="text-emerald-400 font-mono">${e.score}</span>` :
+                e.type === 'UPLOAD_PROJECT' ? `Uploaded project ZIP <span class="text-white font-medium">${e.project}</span> successfully.` :
+                e.type === 'SRS_WARN' ? `AST flagged 4 non-blocking warnings on <span class="text-white font-medium">${e.project}</span>` :
+                `Security scan complete for <span class="text-white font-medium">${e.project}</span>: <span class="text-emerald-400">${e.score}</span>`}
+            </p>
+            <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+              <span>${e.detail.split('•')[0] || ''}</span>
+              <span class="${isCrash ? 'text-rose-400 font-bold' : e.badgeColor === 'amber' ? 'text-amber-400' : 'text-emerald-400'}">${e.detail.split('•')[1] || e.score}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Stream Filter Handler
+    function filterStream(category) {
+      streamFilter = category;
+      const ids = {
+        'all': 'streamFilterAll',
+        'Security': 'streamFilterSecurity',
+        'SRS Rules': 'streamFilterSRS',
+        'AST Errors': 'streamFilterAST'
+      };
+
+      Object.keys(ids).forEach(key => {
+        const el = document.getElementById(ids[key]);
+        if (!el) return;
+        if (key === category) {
+          el.className = "px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 cursor-pointer font-bold";
+        } else {
+          el.className = "px-2 py-0.5 rounded bg-white/5 text-slate-400 hover:text-white border border-white/5 cursor-pointer";
+        }
+      });
+
+      renderStream();
+    }
+
+    // Live Stream Simulator
+    function startStreamSimulation() {
+      if (streamInterval) clearInterval(streamInterval);
+      streamInterval = setInterval(() => {
+        if (!isStreamRunning) return;
+
+        const randomProjects = ["FinTech Wallet API", "Cloud Storage File Vault", "Digital Identity KYC", "Music Streaming API", "Smart IoT Telemetry"];
+        const proj = randomProjects[Math.floor(Math.random() * randomProjects.length)];
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+
+        const newEvents = [
+          { type: "REVIEW_RUN", category: "SRS Rules", time: timeStr, project: proj, score: "96%", detail: "daemon AST • latency: 1.1s", badgeColor: "blue" },
+          { type: "AST_PARSE", category: "AST Errors", time: timeStr, project: proj, score: "0 errors", detail: "tokens scanned: 89,420", badgeColor: "emerald" },
+          { type: "SECURITY_SCAN", category: "Security", time: timeStr, project: proj, score: "Pass", detail: "OWASP Top 10 • Clean", badgeColor: "purple" }
+        ];
+
+        const chosen = newEvents[Math.floor(Math.random() * newEvents.length)];
+        STREAM_EVENTS.unshift(chosen);
+        if (STREAM_EVENTS.length > 25) STREAM_EVENTS.pop();
+
+        const pingEl = document.getElementById("streamPingBadge");
+        if (pingEl) {
+          const ping = Math.floor(Math.random() * 8) + 9;
+          pingEl.innerText = `${ping} ms ping`;
+        }
+
+        renderStream();
+      }, 7000);
+    }
+
+    function toggleStreamSimulation() {
+      isStreamRunning = !isStreamRunning;
+      const btn = document.getElementById("streamToggleBtn");
+      if (btn) {
+        btn.innerHTML = isStreamRunning ? '<i data-lucide="pause" class="w-3.5 h-3.5"></i>' : '<i data-lucide="play" class="w-3.5 h-3.5 text-emerald-400"></i>';
+        lucide.createIcons();
+      }
+      showToast(isStreamRunning ? "Live stream resumed" : "Live stream paused", "info");
+    }
+
+    // Modals Management
+    function openTerminalModal() {
+      document.getElementById('terminalModal').classList.remove('hidden');
+      lucide.createIcons();
+      const termInput = document.getElementById('termCommandInput');
+      if (termInput) termInput.focus();
+    }
+
+    function closeTerminalModal() {
+      document.getElementById('terminalModal').classList.add('hidden');
+    }
+
+    function handleTerminalCommand(e) {
+      if (e.key === "Enter") {
+        const input = document.getElementById('termCommandInput');
+        const val = input.value.trim();
+        if (!val) return;
+
+        const body = document.getElementById('terminalBody');
+        const time = new Date().toTimeString().split(' ')[0];
+
+        body.innerHTML += `<div class="text-cyan-300 font-bold mt-2">&gt; ${val}</div>`;
+
+        if (val.toLowerCase() === 'clear') {
+          body.innerHTML = `<div class="text-slate-500">// Terminal cleared</div>`;
+        } else if (val.toLowerCase().includes('crash') || val.toLowerCase().includes('trace')) {
+          body.innerHTML += `
+            <div class="text-rose-400 font-mono mt-1">
+              [STACK TRACE #41908]:<br/>
+              &gt; #0 0x00007f98c in lidar_pointcloud_parser (sensors/lidar.py:156)<br/>
+              &gt; #1 0x00007f92a in dispatch_sensor_packet (telemetry/stream.py:44)<br/>
+              &gt; #2 0x00007f8fe in main_watchdog_loop (safety/watchdog.py:89)<br/>
+              &gt; Resolution: Add bounds checks & initialize ring mutex lock.
+            </div>
+          `;
+        } else if (val.toLowerCase().includes('scan')) {
+          body.innerHTML += `
+            <div class="text-blue-400">[${time}] Triggering AST heuristic scan across all 27 projects...</div>
+            <div class="text-rose-400 font-bold">[${time}] 1 CRITICAL FAILURE: Autonomous Vehicle LiDAR Pipeline (Score: 41%)</div>
+            <div class="text-emerald-400">[${time}] 26/27 passing all SRS compliance checks.</div>
+          `;
+        } else if (val.toLowerCase().includes('rules')) {
+          body.innerHTML += `
+            <div class="text-slate-300">[${time}] Active Rule Engines:</div>
+            <div class="text-rose-400 font-mono text-[11px] pl-3">• REQ-005: Memory Safety & Buffer Boundaries [FAILED]</div>
+            <div class="text-emerald-300 font-mono text-[11px] pl-3">• REQ-001: JWT Auth & Session Integrity (Active)</div>
+            <div class="text-emerald-300 font-mono text-[11px] pl-3">• REQ-002: Model Constraints & Migrations (Active)</div>
+            <div class="text-emerald-300 font-mono text-[11px] pl-3">• REQ-003: REST Route Response Typing (Active)</div>
+          `;
+        } else {
+          body.innerHTML += `<div class="text-amber-400">[${time}] Command executed: '${val}'. Status: OK.</div>`;
+        }
+
+        input.value = "";
+        body.scrollTop = body.scrollHeight;
+      }
+    }
+
+    function openUploadModal() {
+      document.getElementById('uploadModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeUploadModal() {
+      document.getElementById('uploadModal').classList.add('hidden');
+    }
+
+    function handleFileSelect(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        document.getElementById('uploadFileText').innerText = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    }
+
+    function submitNewProject() {
+      const nameInput = document.getElementById('uploadProjectName');
+      const branchInput = document.getElementById('uploadProjectBranch');
+      const name = nameInput.value.trim() || "Automated Review Candidate API";
+      const branch = branchInput.value.trim() || "feat/new-submission:110fa9";
+
+      const newProj = {
+        id: ALL_PROJECTS.length + 1,
+        name: name,
+        branch: branch,
+        auditor: "@sanjays",
+        date: "Just now",
+        score: 97,
+        status: "passed",
+        issues: "0 crit / 0 minor",
+        icon: "sparkles",
+        color: "cyan"
+      };
+
+      ALL_PROJECTS.unshift(newProj);
+      document.getElementById('statTotalProjects').innerText = ALL_PROJECTS.length;
+      document.getElementById('statCompletedReviews').innerText = ALL_PROJECTS.length - 1;
+
+      closeUploadModal();
+      setFilter('all');
+      showToast(`Uploaded and verified "${name}" (Score: 97%)`, "success");
+    }
+
+    function openThresholdsModal() {
+      document.getElementById('thresholdsModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeThresholdsModal() {
+      document.getElementById('thresholdsModal').classList.add('hidden');
+    }
+
+    function saveThresholds() {
+      closeThresholdsModal();
+      showToast("Neural rule thresholds updated and synced to LLVM engine", "success");
+    }
+
+    function exportInsights() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(ALL_PROJECTS, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "codereview_ai_insights.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Insights report exported to codereview_ai_insights.json", "info");
+    }
+
+    let activeReportProject = null;
+
+    function inspectProject(id) {
+      openReportPreviewModal(id);
+    }
+
+    function openReportPreviewModal(id) {
+      const project = ALL_PROJECTS.find(p => p.id === id);
+      if (!project) return;
+      activeReportProject = project;
+
+      // Populate Modal Fields
+      document.getElementById('reportModalProjectName').innerText = project.name;
+      document.getElementById('reportModalBranch').innerText = project.branch;
+      document.getElementById('reportModalAuditor').innerText = project.auditor;
+
+      const badge = document.getElementById('reportModalStatusBadge');
+      if (project.status === 'failed') {
+        badge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-rose-500/25 text-rose-300 border border-rose-500/40";
+        badge.innerText = "FAILED (CRITICAL)";
+      } else if (project.status === 'passed') {
+        badge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+        badge.innerText = "PASSED (GRADE A)";
+      } else {
+        badge.className = "px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+        badge.innerText = "NEEDS REVIEW";
+      }
+
+      // Default scores from project
+      const autoScore = project.score;
+      document.getElementById('modalAutoScoreDisplay').innerText = autoScore + "%";
+
+      // Set initial slider values
+      const compVal = project.status === 'failed' ? 35 : autoScore >= 95 ? 96 : 88;
+      const qualVal = project.status === 'failed' ? 40 : 90;
+      const testVal = project.status === 'failed' ? 30 : 95;
+      const docVal = project.status === 'failed' ? 60 : 100;
+
+      document.getElementById('sliderComp').value = compVal;
+      document.getElementById('sliderQual').value = qualVal;
+      document.getElementById('sliderTest').value = testVal;
+      document.getElementById('sliderDoc').value = docVal;
+
+      updateLiveModalScores();
+      switchReportModalMode('compare');
+
+      document.getElementById('reportPreviewModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeReportPreviewModal() {
+      document.getElementById('reportPreviewModal').classList.add('hidden');
+    }
+
+    function switchReportModalMode(mode) {
+      const tabAuto = document.getElementById('modalTabAuto');
+      const tabManual = document.getElementById('modalTabManual');
+      const tabCompare = document.getElementById('modalTabCompare');
+
+      const boxAuto = document.getElementById('modalBoxAuto');
+      const boxManual = document.getElementById('modalBoxManual');
+      const boxDelta = document.getElementById('modalBoxDelta');
+
+      [tabAuto, tabManual, tabCompare].forEach(t => {
+        t.className = "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all";
+      });
+
+      if (mode === 'auto') {
+        tabAuto.className = "flex-1 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center justify-center gap-1.5";
+        boxAuto.classList.remove('hidden');
+        boxManual.classList.add('hidden');
+        boxDelta.classList.add('hidden');
+      } else if (mode === 'manual') {
+        tabManual.className = "flex-1 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold flex items-center justify-center gap-1.5";
+        boxAuto.classList.add('hidden');
+        boxManual.classList.remove('hidden');
+        boxDelta.classList.add('hidden');
+      } else {
+        tabCompare.className = "flex-1 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30 font-semibold flex items-center justify-center gap-1.5";
+        boxAuto.classList.remove('hidden');
+        boxManual.classList.remove('hidden');
+        boxDelta.classList.remove('hidden');
+      }
+    }
+
+    function updateLiveModalScores() {
+      const comp = parseInt(document.getElementById('sliderComp').value);
+      const qual = parseInt(document.getElementById('sliderQual').value);
+      const test = parseInt(document.getElementById('sliderTest').value);
+      const doc = parseInt(document.getElementById('sliderDoc').value);
+
+      document.getElementById('sliderCompVal').innerText = comp + "%";
+      document.getElementById('sliderQualVal').innerText = qual + "%";
+      document.getElementById('sliderTestVal').innerText = test + "%";
+      document.getElementById('sliderDocVal').innerText = doc + "%";
+
+      // SRS Formula: Overall = Comp*0.6 + Qual*0.2 + Test*0.1 + Doc*0.1
+      const manualOverall = Math.round((comp * 0.60) + (qual * 0.20) + (test * 0.10) + (doc * 0.10));
+      document.getElementById('modalManualScoreDisplay').innerText = manualOverall + "%";
+
+      if (activeReportProject) {
+        const delta = manualOverall - activeReportProject.score;
+        const deltaDisplay = document.getElementById('modalDeltaDisplay');
+        if (delta > 0) {
+          deltaDisplay.className = "text-3xl font-bold text-emerald-400 mt-1";
+          deltaDisplay.innerText = `+${delta}%`;
+        } else if (delta < 0) {
+          deltaDisplay.className = "text-3xl font-bold text-rose-400 mt-1";
+          deltaDisplay.innerText = `${delta}%`;
+        } else {
+          deltaDisplay.className = "text-3xl font-bold text-blue-400 mt-1";
+          deltaDisplay.innerText = `0%`;
+        }
+      }
+    }
+
+    function resetModalScores() {
+      if (!activeReportProject) return;
+      document.getElementById('sliderComp').value = activeReportProject.score;
+      document.getElementById('sliderQual').value = 90;
+      document.getElementById('sliderTest').value = 95;
+      document.getElementById('sliderDoc').value = 100;
+      updateLiveModalScores();
+    }
+
+    function applyManualAdjustment() {
+      if (!activeReportProject) return;
+      const newScore = parseInt(document.getElementById('modalManualScoreDisplay').innerText);
+      activeReportProject.score = newScore;
+      if (newScore >= 85) {
+        activeReportProject.status = 'passed';
+      } else {
+        activeReportProject.status = 'needs_review';
+      }
+      renderTable();
+      closeReportPreviewModal();
+      showToast(`Manual report adjustment saved for "${activeReportProject.name}": New Score ${newScore}%`, "success");
+    }
+
+
+    function toggleNotificationPanel() {
+      const panel = document.getElementById('notificationPanel');
+      panel.classList.toggle('hidden');
+    }
+
+    function markAllNotifsRead() {
+      const badge = document.getElementById('notifBadge');
+      if (badge) badge.classList.add('hidden');
+      toggleNotificationPanel();
+      showToast("All system alerts marked as read", "info");
+    }
+
+    function toggleProfileMenu() {
+      const menu = document.getElementById('profileMenu');
+      menu.classList.toggle('hidden');
+    }
+
+    function closeAllDropdowns() {
+      const panel = document.getElementById('notificationPanel');
+      if (panel) panel.classList.add('hidden');
+      const menu = document.getElementById('profileMenu');
+      if (menu) menu.classList.add('hidden');
+    }
+
+    // Toast Notification Utility
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'border-emerald-500/40 bg-emerald-950/80 text-emerald-200',
+        info: 'border-blue-500/40 bg-blue-950/80 text-blue-200',
+        warning: 'border-rose-500/40 bg-rose-950/90 text-rose-200 glow-rose'
+      };
+
+      toast.className = `p-3.5 rounded-xl border ${colors[type] || colors.info} backdrop-blur-lg shadow-2xl text-xs font-mono flex items-center gap-2.5 transition-all transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full ${type === 'success' ? 'bg-emerald-400' : type === 'warning' ? 'bg-rose-400 animate-ping' : 'bg-blue-400'}"></span>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 20);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

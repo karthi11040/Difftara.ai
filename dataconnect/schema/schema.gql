@@ -1,0 +1,36 @@
+type Item @table {
+  name: String!
+  initialCondition: String!
+  status: String!
+  photoUrl: String
+  description: String
+}
+
+type RepairTask @table {
+  startDate: Timestamp!
+  status: String!
+  notes: String
+  completionDate: Timestamp
+  item: Item!
+}
+
+type Technician @table {
+  name: String!
+  email: String!
+  specialty: String
+}
+
+type Assignment @table {
+  assignedDate: Timestamp!
+  priorityLevel: Int
+  repairTask: RepairTask!
+  technician: Technician!
+}
+
+type Shipment @table {
+  trackingNumber: String!
+  destinationAddress: String!
+  shipDate: Date!
+  carrierName: String
+  item: Item!
+}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Projects · CodeReview AI{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Workspace</p><h1>Projects</h1><p class="muted">Browse submissions and open their latest review.</p></div>{% if user.is_mentor_user %}<a class="button button-primary" href="{% url 'upload_project' %}">＋ New project</a>{% endif %}</section>
+<section class="panel">
+  {% if projects %}<div class="table-scroll"><table class="data-table"><thead><tr><th>Project</th><th>Owner</th><th>Added</th><th>Status</th><th>Latest score</th><th></th></tr></thead><tbody>
+    {% for project in projects %}<tr><td><a class="project-link" href="{% url 'project_detail' project.id %}">{{ project.name }}</a><small class="table-subtitle">{{ project.description|default:"No description provided"|truncatechars:90 }}</small></td><td>{{ project.owner.username }}</td><td>{{ project.created_at|date:"M j, Y" }}</td><td><span class="status status-{{ project.status }}">{{ project.get_status_display }}</span></td><td>{% if project.latest_review %}<strong>{{ project.latest_review.overall_score }}%</strong>{% else %}<span class="muted">Not reviewed</span>{% endif %}</td><td><a class="row-action" href="{% url 'project_detail' project.id %}" aria-label="Open {{ project.name }}">→</a></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<div class="empty-state"><span class="empty-symbol" aria-hidden="true">▤</span><h2>No projects found</h2><p>When a project is uploaded, it will show up here.</p>{% if user.is_mentor_user %}<a class="button button-primary" href="{% url 'upload_project' %}">Upload a project</a>{% endif %}</div>{% endif %}
+</section>
+{% endblock %}

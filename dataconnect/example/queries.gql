@@ -1,0 +1,137 @@
+mutation CreateItem($name: String!, $initialCondition: String!, $status: String!) @auth(level: USER) {
+  item_insert(data: { name: $name, initialCondition: $initialCondition, status: $status })
+}
+
+mutation UpdateItem($id: UUID!, $status: String!) @auth(level: USER) {
+  item_update(id: $id, data: { status: $status })
+}
+
+mutation DeleteItem($id: UUID!) @auth(level: USER) {
+  item_delete(id: $id)
+}
+
+query GetItem($id: UUID!) @auth(level: USER) {
+  item(id: $id) {
+    name
+    status
+  }
+}
+
+query ListItems @auth(level: PUBLIC, insecureReason: "Public list of items for inventory transparency") {
+  items {
+    id
+    name
+    status
+  }
+}
+
+mutation CreateRepairTask($startDate: Timestamp!, $status: String!, $itemId: UUID!) @auth(level: USER) {
+  repairTask_insert(data: { startDate: $startDate, status: $status, itemId: $itemId })
+}
+
+mutation UpdateRepairTask($id: UUID!, $notes: String) @auth(level: USER) {
+  repairTask_update(id: $id, data: { notes: $notes })
+}
+
+mutation DeleteRepairTask($id: UUID!) @auth(level: USER) {
+  repairTask_delete(id: $id)
+}
+
+query GetRepairTask($id: UUID!) @auth(level: USER) {
+  repairTask(id: $id) {
+    startDate
+    status
+    item {
+      name
+    }
+  }
+}
+
+query ListRepairTasks @auth(level: USER) {
+  repairTasks {
+    id
+    startDate
+    status
+  }
+}
+
+mutation CreateTechnician($name: String!, $email: String!) @auth(level: USER) {
+  technician_insert(data: { name: $name, email: $email })
+}
+
+mutation UpdateTechnician($id: UUID!, $specialty: String) @auth(level: USER) {
+  technician_update(id: $id, data: { specialty: $specialty })
+}
+
+mutation DeleteTechnician($id: UUID!) @auth(level: USER) {
+  technician_delete(id: $id)
+}
+
+query GetTechnician($id: UUID!) @auth(level: USER) {
+  technician(id: $id) {
+    name
+    email
+    specialty
+  }
+}
+
+query ListTechnicians @auth(level: USER) {
+  technicians {
+    id
+    name
+  }
+}
+
+mutation CreateAssignment($assignedDate: Timestamp!, $repairTaskId: UUID!, $technicianId: UUID!) @auth(level: USER) {
+  assignment_insert(data: { assignedDate: $assignedDate, repairTaskId: $repairTaskId, technicianId: $technicianId })
+}
+
+mutation UpdateAssignment($id: UUID!, $priorityLevel: Int) @auth(level: USER) {
+  assignment_update(id: $id, data: { priorityLevel: $priorityLevel })
+}
+
+mutation DeleteAssignment($id: UUID!) @auth(level: USER) {
+  assignment_delete(id: $id)
+}
+
+query GetAssignment($id: UUID!) @auth(level: USER) {
+  assignment(id: $id) {
+    assignedDate
+    repairTask {
+      status
+    }
+  }
+}
+
+query ListAssignments @auth(level: USER) {
+  assignments {
+    id
+    assignedDate
+  }
+}
+
+mutation CreateShipment($trackingNumber: String!, $destinationAddress: String!, $shipDate: Date!, $itemId: UUID!) @auth(level: USER) {
+  shipment_insert(data: { trackingNumber: $trackingNumber, destinationAddress: $destinationAddress, shipDate: $shipDate, itemId: $itemId })
+}
+
+mutation UpdateShipment($id: UUID!, $carrierName: String) @auth(level: USER) {
+  shipment_update(id: $id, data: { carrierName: $carrierName })
+}
+
+mutation DeleteShipment($id: UUID!) @auth(level: USER) {
+  shipment_delete(id: $id)
+}
+
+query GetShipment($id: UUID!) @auth(level: USER) {
+  shipment(id: $id) {
+    trackingNumber
+    destinationAddress
+  }
+}
+
+query ListShipments @auth(level: USER) {
+  shipments {
+    id
+    trackingNumber
+  }
+}

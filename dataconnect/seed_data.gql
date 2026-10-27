@@ -1,0 +1,27 @@
+mutation SeedAllTables @transaction {
+  item_insertMany(data: [
+    { id: "e0a1b2c3-d4e5-4f6a-b789-012345678901", name: "Laptop", initialCondition: "Good", status: "Available" },
+    { id: "e0a1b2c3-d4e5-4f6a-b789-012345678902", name: "Monitor", initialCondition: "Fair", status: "Under Repair" },
+    { id: "e0a1b2c3-d4e5-4f6a-b789-012345678903", name: "Keyboard", initialCondition: "Excellent", status: "Available" }
+  ])
+  
+  repairTask_insertMany(data: [
+    { id: "f1a1b2c3-d4e5-4f6a-b789-012345678901", startDate: "2023-10-01T10:00:00Z", status: "In Progress", itemId: "e0a1b2c3-d4e5-4f6a-b789-012345678902" },
+    { id: "f1a1b2c3-d4e5-4f6a-b789-012345678902", startDate: "2023-10-02T12:00:00Z", status: "Pending", itemId: "e0a1b2c3-d4e5-4f6a-b789-012345678901" }
+  ])
+
+  technician_insertMany(data: [
+    { id: "a1a1b2c3-d4e5-4f6a-b789-012345678901", name: "Alice Smith", email: "alice@example.com", specialty: "Electronics" },
+    { id: "a1a1b2c3-d4e5-4f6a-b789-012345678902", name: "Bob Jones", email: "bob@example.com", specialty: "Hardware" }
+  ])
+
+  assignment_insertMany(data: [
+    { assignedDate: "2023-10-01T11:00:00Z", priorityLevel: 1, repairTaskId: "f1a1b2c3-d4e5-4f6a-b789-012345678901", technicianId: "a1a1b2c3-d4e5-4f6a-b789-012345678901" },
+    { assignedDate: "2023-10-02T13:00:00Z", priorityLevel: 2, repairTaskId: "f1a1b2c3-d4e5-4f6a-b789-012345678902", technicianId: "a1a1b2c3-d4e5-4f6a-b789-012345678902" }
+  ])
+
+  shipment_insertMany(data: [
+    { trackingNumber: "TRK123456", destinationAddress: "123 Main St", shipDate: "2023-10-05", carrierName: "FedEx", itemId: "e0a1b2c3-d4e5-4f6a-b789-012345678903" },
+    { trackingNumber: "TRK654321", destinationAddress: "456 Oak Ave", shipDate: "2023-10-06", carrierName: "UPS", itemId: "e0a1b2c3-d4e5-4f6a-b789-012345678901" }
+  ])
+}

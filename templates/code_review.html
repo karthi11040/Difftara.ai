@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Code review · Difftara.ai{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Difftara.ai · AI review</p><h1>Review code</h1><p class="muted">Check correctness, bugs, code quality, and simplicity. Source is read as text and never executed.</p></div></section>
+<form method="post" enctype="multipart/form-data" class="form-stack code-review-form">{% csrf_token %}
+  <section class="panel"><div class="panel-heading"><div><p class="eyebrow">Choose input</p><h2>What should we review?</h2></div></div>
+    <div class="review-input-tabs" role="tablist"><button type="button" class="input-tab is-active" data-target="paste-panel">Paste code</button><button type="button" class="input-tab" data-target="file-panel">One file</button><button type="button" class="input-tab" data-target="zip-panel">ZIP project</button></div>
+    <div class="review-input-panel" id="paste-panel"><label for="source">Source code</label><textarea id="source" name="source" rows="15" maxlength="40000" placeholder="Paste a function or source file…"></textarea></div>
+    <div class="review-input-panel" id="file-panel" hidden><label for="code-file">Source file</label><input id="code-file" type="file" name="code_file" accept=".py,.js,.jsx,.ts,.tsx,.java,.c,.h,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.html,.css,.sql,.sh"><small>UTF-8 source file, up to 1 MB.</small></div>
+    <div class="review-input-panel" id="zip-panel" hidden><label for="zip-file">ZIP archive</label><input id="zip-file" type="file" name="zip_file" accept=".zip"><small>Up to 15 MB. Reviews at most 40 source files; archives are never extracted or executed.</small></div>
+  </section>
+  <section class="panel"><div class="field"><label for="provider">Review model</label><select id="provider" name="provider"><option value="gensara">GenSeraLabs API</option><option value="local">Local model (Ollama)</option></select><small>GenSera receives the selected source code for processing. Choose Local to keep code on this machine.</small></div></section>
+  <div class="form-actions"><button class="button button-primary" type="submit">Review code <span aria-hidden="true">→</span></button></div>
+</form>
+{% if review %}<section class="panel review-result" aria-labelledby="review-result-title"><p class="eyebrow">Review complete · {{ provider }}</p><h2 id="review-result-title">Findings for {{ files|join:", " }}</h2><div class="review-markdown">{{ review|linebreaksbr }}</div><p class="muted">AI suggestions can be wrong. Verify each finding against your code and run your own checks.</p></section>{% endif %}
+{% endblock %}
+{% block extra_js %}<script>
+  document.querySelectorAll('.input-tab').forEach(tab=>tab.addEventListener('click',()=>{
+    document.querySelectorAll('.input-tab').forEach(item=>item.classList.toggle('is-active',item===tab));
+    document.querySelectorAll('.review-input-panel').forEach(panel=>panel.hidden=panel.id!==tab.dataset.target);
+    document.querySelectorAll('.review-input-panel input,.review-input-panel textarea').forEach(field=>field.disabled=!field.closest('.review-input-panel').hidden);
+  }));
+  document.querySelectorAll('.review-input-panel input,.review-input-panel textarea').forEach(field=>field.disabled=!field.closest('.review-input-panel').hidden);
+</script>{% endblock %}

@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Activity · CodeReview AI{% endblock %}
+{% block content %}
+<section class="page-heading"><div><p class="eyebrow">Workspace history</p><h1>Activity</h1><p class="muted">Uploads, reviews, and mentor decisions recorded for this workspace.</p></div></section>
+<section class="panel activity-table-panel">{% if activities %}<div class="table-scroll"><table class="data-table"><thead><tr><th>Time</th><th>Action</th><th>Project</th><th>Details</th><th>User</th></tr></thead><tbody>{% for activity in activities %}<tr><td><time datetime="{{ activity.created_at|date:'c' }}">{{ activity.created_at|date:"M j, Y · H:i" }}</time></td><td><span class="action-tag">{{ activity.action|lower|cut:"_" }}</span></td><td>{% if activity.project %}<a class="text-link" href="{% url 'project_detail' activity.project.id %}">{{ activity.project.name }}</a>{% else %}—{% endif %}</td><td class="activity-message">{{ activity.message }}</td><td>{{ activity.user.username|default:"System" }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><span class="empty-symbol" aria-hidden="true">◷</span><h2>No activity recorded</h2><p>Project uploads and review actions will appear here.</p></div>{% endif %}</section>
+{% endblock %}
