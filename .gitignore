@@ -10,4 +10,6 @@ uploads/*
 !uploads/.gitkeep
 staticfiles/
 *.log
+/login.html
+/{
 .venv/
