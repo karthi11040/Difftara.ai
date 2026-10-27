@@ -1,5 +1,9 @@
 # CodeReview AI
 
+<p align="center">
+  <img src="static/images/favicon.svg" width="96" alt="Difftara.ai logo">
+</p>
+
 A Django code review workspace. It supports requirement-based project reviews and quick AI reviews from pasted code, a source file, or a ZIP. Uploaded source is read as text and never executed.
 
 ## Run locally on Windows
