@@ -38,6 +38,7 @@ button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 .brand { display: inline-flex; align-items: center; gap: 10px; width: fit-content; color: var(--ink); font-size: 15px; font-weight: 700; letter-spacing: -.03em; text-decoration: none; }
 .brand small { color: var(--purple); font-size: inherit; }
 .brand-mark { display: grid; width: 34px; height: 34px; place-items: center; border-radius: var(--radius-md); background: var(--purple); color: white; font: 500 11px var(--mono); letter-spacing: -.08em; }
+.brand-mark-image { display: block; width: 34px; height: 34px; border-radius: var(--radius-md); }
 .nav-label { margin: 39px 10px 10px; color: var(--subtle); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
 .nav-list { display: grid; gap: 4px; }
 .nav-item { display: flex; min-height: 40px; align-items: center; gap: 12px; padding: 8px 11px; border: 1px solid transparent; border-radius: var(--radius-md); color: #4f5058; font-size: 13px; font-weight: 500; text-decoration: none; transition: background .15s, color .15s, border-color .15s; }
