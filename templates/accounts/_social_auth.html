@@ -13,7 +13,29 @@
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
 <script>
-  if (!firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyBdOsGzbh_Im3X4KgZluo1o1EgGTKK7BeM",authDomain:"difftara-ai-139ec.firebaseapp.com",projectId:"difftara-ai-139ec",appId:"1:164065747404:web:dde7e02fe66512d6ac7d69"});
+  const firebaseErrorMessages={
+    'auth/operation-not-allowed':'Enable this sign-in provider in Firebase Console.',
+    'auth/unauthorized-domain':'Add localhost and 127.0.0.1 to Firebase Authentication → Settings → Authorized domains.',
+    'auth/unauthorized-continue-uri':'Add this site to Firebase Authentication → Settings → Authorized domains.',
+    'auth/invalid-oauth-client-id':'Add the GitHub OAuth app client ID and secret in Firebase Authentication → GitHub provider settings.',
+    'auth/missing-client-identifier':'Add the GitHub OAuth app client ID and secret in Firebase Authentication → GitHub provider settings.',
+    'auth/popup-blocked':'Your browser blocked the sign-in popup. Allow popups for this site and try again.',
+    'auth/popup-closed-by-user':'The sign-in window closed before sign-in finished.',
+    'auth/network-request-failed':'Firebase could not connect. Check your internet connection.',
+    'auth/invalid-api-key':'Firebase configuration is invalid. Check the web app API key.',
+    'auth/invalid-credential':'Email or password is incorrect.',
+    'auth/invalid-login-credentials':'Email or password is incorrect.',
+    'auth/user-not-found':'No account was found for that email.',
+    'auth/wrong-password':'Email or password is incorrect.'
+  };
+  function firebaseErrorText(error){return firebaseErrorMessages[error.code]||error.message||'Sign-in failed. Please try again.';}
+  if (window.firebase && !firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyBdOsGzbh_Im3X4KgZluo1o1EgGTKK7BeM",authDomain:"difftara-ai-139ec.firebaseapp.com",projectId:"difftara-ai-139ec",appId:"1:164065747404:web:dde7e02fe66512d6ac7d69"});
+  async function finishFirebaseSignIn(user){
+    const response=await fetch('{% url "firebase_login" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({id_token:await user.getIdToken(true)})});
+    if(!response.ok) throw new Error((await response.json()).error||'Sign-in could not be completed.');
+    const target=new URL(new URLSearchParams(location.search).get('next')||'{% url "dashboard" %}',location.origin);
+    location.href=target.origin===location.origin?target.href:'{% url "dashboard" %}';
+  }
   document.querySelectorAll('[data-provider]').forEach(button=>button.addEventListener('click',async()=>{
     const status=document.getElementById('oauth-status');
     try {
@@ -21,10 +43,7 @@
       const provider=new Provider();
       if(button.dataset.provider==='github') provider.addScope('user:email');
       const result=await firebase.auth().signInWithPopup(provider);
-      const response=await fetch('{% url "firebase_login" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({id_token:await result.user.getIdToken()})});
-      if(!response.ok) throw new Error((await response.json()).error||'Sign-in could not be completed.');
-      const target=new URL(new URLSearchParams(location.search).get('next')||'{% url "dashboard" %}',location.origin);
-      location.href=target.origin===location.origin?target.href:'{% url "dashboard" %}';
-    } catch(error) { status.textContent=error.message; }
+      await finishFirebaseSignIn(result.user);
+    } catch(error) { status.textContent=firebaseErrorText(error); }
   }));
 </script>

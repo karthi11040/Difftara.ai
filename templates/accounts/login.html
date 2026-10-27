@@ -20,19 +20,34 @@
       <div class="login-form-wrap">
         <p class="eyebrow">Welcome back</p>
         <h2 id="login-title">Sign in to your workspace</h2>
-        <p class="muted">Sign in with your workspace account or a connected identity.</p>
+        <p class="muted">Sign in with your email or connected identity.</p>
         {% if messages %}<div class="flash-stack" role="alert">{% for message in messages %}<div class="flash flash-error">{{ message }}</div>{% endfor %}</div>{% endif %}
-        <form method="post" action="{% url 'login' %}" class="form-stack">
+        <form id="email-login-form" class="form-stack">
           {% csrf_token %}
-          <div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required autofocus></div>
-          <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+          <div class="field"><label for="email-login">Email</label><input id="email-login" name="email" type="email" autocomplete="email" required autofocus></div>
+          <div class="field"><label for="email-password">Password</label><input id="email-password" name="password" type="password" autocomplete="current-password" required></div>
           <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">→</span></button>
         </form>
+        <details class="local-login"><summary>Sign in with a workspace account</summary><form method="post" action="{% url 'login' %}" class="form-stack">{% csrf_token %}<div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required></div><div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div><button class="button button-secondary button-wide" type="submit">Continue with workspace account</button></form></details>
         {% include 'accounts/_social_auth.html' with action='Sign in' %}
-        <p class="login-footnote">Need access? Ask your project administrator to create an account.</p>
         <p class="login-footnote">New to Difftara.ai? <a href="{% url 'signup' %}">Create an account</a></p>
       </div>
     </section>
   </main>
+  <script>
+    const emailLogin=document.getElementById('email-login-form');
+    const authStatus=document.getElementById('oauth-status');
+    if(new URLSearchParams(location.search).get('verified')==='1') authStatus.textContent='Email verified. Sign in to continue.';
+    emailLogin.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=emailLogin.querySelector('button[type="submit"]');button.disabled=true;authStatus.textContent='Signing in…';
+      try {
+        const result=await firebase.auth().signInWithEmailAndPassword(emailLogin.querySelector('[name="email"]').value,emailLogin.querySelector('[name="password"]').value);
+        await result.user.reload();
+        if(!result.user.emailVerified){await firebase.auth().signOut();throw new Error('Verify your email from the link we sent before signing in.');}
+        await finishFirebaseSignIn(result.user);
+      } catch(error) {authStatus.textContent=firebaseErrorText(error);button.disabled=false;}
+    });
+  </script>
 </body>
 </html>

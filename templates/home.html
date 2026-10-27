@@ -1,16 +1,65 @@
 {% load static %}<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark"><meta name="description" content="Review source code with clear findings for correctness, bugs, quality, and simplicity."><title>Difftara.ai · Clearer code reviews</title><link rel="stylesheet" href="{% static 'css/custom.css' %}"></head>
-<body class="home-page">
-  <a class="skip-link" href="#home-content">Skip to content</a>
-  <header class="home-nav"><a class="home-brand" href="{% url 'home' %}"><img src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a><nav aria-label="Main navigation"><a href="#features">Features</a><a href="#how-it-works">How it works</a></nav><div class="home-nav-actions"><a class="home-login" href="{% url 'login' %}">Log in</a><a class="button button-primary" href="{% url 'signup' %}">Get started <span aria-hidden="true">→</span></a></div></header>
-  <main id="home-content">
-    <section class="home-hero"><div class="hero-glow" aria-hidden="true"></div><div class="hero-copy"><p class="eyebrow">Thoughtful reviews, less guesswork</p><h1>See the signal<br>in every line.</h1><p>Review code for correctness, bugs, quality, and simplicity. Add requirements when you need a deeper project review.</p><div class="hero-actions"><a class="button button-primary" href="{% url 'signup' %}">Start reviewing <span aria-hidden="true">→</span></a><a class="hero-secondary" href="#features">Explore features <span aria-hidden="true">↓</span></a></div><div class="hero-note"><span class="status-dot" aria-hidden="true"></span>Source is read as text. Your code is never executed.</div></div>
-      <div class="review-preview" aria-label="Illustration of a code review"><div class="preview-top"><span class="preview-brand">D<span>•</span></span><span>Code review</span><span class="preview-badge">AI assisted</span></div><div class="preview-file"><span>▤</span> src/auth/session.py <span class="preview-muted">· 3 findings</span></div><div class="code-lines" aria-hidden="true"><span><i>01</i> <b>def</b> validate_session(token):</span><span><i>02</i> &nbsp; user = decode(token)</span><span class="code-warning"><i>03</i> &nbsp; <b>return</b> user.is_active</span><span><i>04</i></span><span><i>05</i> <b>def</b> refresh_session(user):</span><span><i>06</i> &nbsp; <b>return</b> create_token(user)</span></div><div class="finding-preview"><span class="finding-mark">!</span><span><strong>Correctness · High</strong><small>Token expiry is not validated before accepting the session.</small></span><span class="finding-line">L3</span></div></div>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark">
+  <meta name="description" content="Difftara.ai reviews code changes for bugs, correctness, quality, and simplicity.">
+  <title>Difftara.ai — The before and after of your code</title>
+  <link rel="stylesheet" href="{% static 'css/custom.css' %}"><link rel="stylesheet" href="{% static 'css/landing.css' %}">
+</head>
+<body class="landing-page">
+  <a class="skip-link" href="#landing-main">Skip to content</a>
+  <header class="site-nav">
+    <a class="site-logo" href="{% url 'home' %}" aria-label="Difftara.ai home"><img src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#diff-demo">Preview</a><a href="#workflow">How it works</a></nav>
+    <div class="site-actions"><a class="site-login" href="{% url 'login' %}">Log in</a><a class="site-cta" href="{% url 'signup' %}">Get started <span aria-hidden="true">↗</span></a></div>
+  </header>
+  <main id="landing-main">
+    <section class="landing-hero">
+      <div class="hero-aura" aria-hidden="true"></div>
+      <p class="hero-kicker"><span></span> A new perspective on code review</p>
+      <h1>The before and after<br>of your code, <em>visualized.</em></h1>
+      <p class="hero-description">Understand what changed, catch what could break, and make every review easier to act on.</p>
+      <div class="hero-buttons"><a class="hero-primary" href="{% url 'signup' %}">Start reviewing free <span aria-hidden="true">→</span></a><a class="hero-watch" href="#diff-demo"><span class="play-icon" aria-hidden="true">▶</span> Explore the preview</a></div>
+      <div class="hero-trust"><span><i>✓</i> Paste, file, or ZIP</span><span><i>✓</i> Code is never executed</span><span><i>✓</i> You stay in control</span></div>
     </section>
-    <section id="features" class="home-features"><div class="section-intro"><p class="eyebrow">Made for useful feedback</p><h2>One workspace. Three ways to review.</h2><p>Start with a snippet or inspect an entire project against its requirements.</p></div><div class="feature-grid"><article class="feature-card"><span class="feature-icon">⌘</span><h3>Review code directly</h3><p>Paste a snippet, upload one source file, or bring a ZIP project for a focused review.</p></article><article class="feature-card"><span class="feature-icon">✓</span><h3>Findings with context</h3><p>See evidence and suggested fixes for correctness, bugs, code quality, and simplicity.</p></article><article class="feature-card"><span class="feature-icon">↔</span><h3>Compare against requirements</h3><p>Upload an SRS, map requirements to code, and share a structured project report.</p></article></div></section>
-    <section id="how-it-works" class="home-cta"><div><p class="eyebrow">Make the next review clearer</p><h2>Start with the code you have.</h2></div><a class="button button-primary" href="{% url 'signup' %}">Create your account <span aria-hidden="true">→</span></a></section>
+
+    <section id="diff-demo" class="demo-section" aria-labelledby="demo-title">
+      <div class="browser-frame">
+        <div class="browser-bar"><div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div><div class="address-bar"><span class="lock-icon" aria-hidden="true">⌑</span> app.difftara.ai / review / preview</div><span class="browser-spacer"></span></div>
+        <div class="review-app">
+          <aside class="review-sidebar" aria-label="Preview files">
+            <div class="sidebar-brand"><span class="mini-mark">D</span><span>Review space</span></div>
+            <p class="sidebar-caption">CHANGES <span>2</span></p>
+            <button class="file-choice is-selected" type="button" data-file="session"><span class="file-type py">PY</span><span><strong>session.py</strong><small>src / auth</small></span><b>2</b></button>
+            <button class="file-choice" type="button" data-file="api"><span class="file-type js">JS</span><span><strong>client.js</strong><small>src / api</small></span><b>1</b></button>
+            <div class="sidebar-bottom"><span class="avatar-dot">K</span><span><strong>Code review</strong><small>Preview workspace</small></span><span class="online-dot"></span></div>
+          </aside>
+          <div class="review-main">
+            <div class="review-toolbar"><div class="repo-title"><span class="repo-icon">⌘</span><span><strong>difftara / app</strong><small id="active-file">src/auth/session.py</small></span></div><div class="toolbar-right"><span class="branch-pill">main <b>→</b> update-auth</span><span class="version-pill">DIFF 01</span></div></div>
+            <div class="diff-heading"><div><span class="diff-eyebrow">CHANGE REVIEW</span><h2 id="demo-title">A clearer view of every change</h2></div><div class="diff-counts"><span class="removed-count">− 2</span><span class="added-count">+ 3</span></div></div>
+            <div class="diff-labels"><span><i></i> BEFORE</span><span><i></i> AFTER</span><span class="diff-file-label" id="diff-file-label">session.py</span></div>
+            <div class="diff-panes"><div class="code-pane before-pane"><div id="before-code" class="code-rows" aria-label="Code before changes"></div></div><div class="code-pane after-pane"><div id="after-code" class="code-rows" aria-label="Code after changes"></div></div></div>
+            <div class="review-insight"><div class="insight-icon" aria-hidden="true">✳</div><div class="insight-copy"><div class="insight-top"><strong id="insight-title">Correctness check</strong><span id="insight-priority" class="priority-high">HIGH PRIORITY</span></div><p id="insight-detail">The updated flow now validates token expiry before trusting the session.</p><span class="insight-location">⌁ &nbsp; src/auth/session.py · line 8</span></div><span class="insight-confidence">AI INSIGHT</span></div>
+            <div class="review-bottom"><div class="review-filters" role="group" aria-label="Preview review categories"><button type="button" class="filter-chip is-active" data-title="Correctness check" data-priority="HIGH PRIORITY" data-detail="The updated flow now validates token expiry before trusting the session." data-level="high">Correctness</button><button type="button" class="filter-chip" data-title="Bug check" data-priority="REVIEW" data-detail="The empty-token case is now handled before the decoder is called." data-level="medium">Bugs</button><button type="button" class="filter-chip" data-title="Quality check" data-priority="LOW PRIORITY" data-detail="The guard clause makes the session flow easier to scan and maintain." data-level="low">Quality</button><button type="button" class="filter-chip" data-title="Simplicity check" data-priority="LOW PRIORITY" data-detail="The early return removes one level of nesting from the function." data-level="low">Simplicity</button></div><span class="preview-disclaimer">Interactive product preview · sample code</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="landing-features"><div class="feature-heading"><p class="section-kicker">BUILT FOR YOUR WORKFLOW</p><h2>From a quick check to a full review.</h2><p>Start small, then bring in the full project when you need more context.</p></div><div class="feature-cards"><article class="feature-tile"><span class="tile-number">01</span><span class="tile-icon">⌘</span><h3>Bring your code</h3><p>Paste a snippet, upload a source file, or submit a ZIP. Pick the format that fits the task.</p><a href="{% url 'signup' %}">Explore code review <span>→</span></a></article><article class="feature-tile"><span class="tile-number">02</span><span class="tile-icon">◈</span><h3>See useful findings</h3><p>Surface potential bugs and correctness issues, with notes on code quality and simplicity.</p><a href="{% url 'signup' %}">Review with context <span>→</span></a></article><article class="feature-tile"><span class="tile-number">03</span><span class="tile-icon">↔</span><h3>Check requirements</h3><p>Compare a project with its SRS and share a structured report with your team.</p><a href="{% url 'signup' %}">Explore project review <span>→</span></a></article></div></section>
+    <section id="workflow" class="landing-bottom-cta"><div><p class="section-kicker">MAKE YOUR NEXT REVIEW COUNT</p><h2>Good code deserves a clear review.</h2><p>Bring a change. Leave with a better understanding of it.</p></div><a class="hero-primary" href="{% url 'signup' %}">Get started <span aria-hidden="true">→</span></a></section>
   </main>
-  <footer class="home-footer"><a href="{% url 'home' %}"><img src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a><span>Code reviews grounded in evidence.</span><a href="{% url 'login' %}">Sign in</a></footer>
+  <footer class="landing-footer"><a class="footer-logo" href="{% url 'home' %}"><img src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a><span>Clear, evidence-based code reviews.</span><a href="{% url 'login' %}">Log in</a><span>© Difftara.ai</span></footer>
+  <script>
+    const reviewExamples={
+      session:{file:'src/auth/session.py',before:'def validate_session(token):\n    user = decode(token)\n    return user.is_active\n\ndef refresh_session(user):\n    return create_token(user)',after:'def validate_session(token):\n    if not token:\n        return None\n    user = decode(token)\n    if user.expires_at < utc_now():\n        return None\n    return user if user.is_active else None',removed:[3],added:[2,3,4,5]},
+      api:{file:'src/api/client.js',before:'async function getProfile(id) {\n  const response = await fetch(`/users/${id}`);\n  return response.json();\n}',after:'async function getProfile(id) {\n  const response = await fetch(`/users/${id}`);\n  if (!response.ok) {\n    throw new Error(`Request failed: ${response.status}`);\n  }\n  return response.json();\n}',removed:[3],added:[3,4,5]}
+    };
+    function renderCode(target,source,changed,side){target.replaceChildren();source.split('\n').forEach((line,index)=>{const row=document.createElement('div');row.className='code-row'+(changed.includes(index+1)?` ${side}-changed`:'');const number=document.createElement('span');number.className='line-number';number.textContent=String(index+1).padStart(2,'0');const mark=document.createElement('span');mark.className='line-mark';mark.textContent=changed.includes(index+1)?(side==='added'?'+':'−'):'';const code=document.createElement('code');code.textContent=line||' ';row.append(number,mark,code);target.append(row);});}
+    function showFile(name){const example=reviewExamples[name];document.getElementById('active-file').textContent=example.file;document.getElementById('diff-file-label').textContent=example.file.split('/').pop();renderCode(document.getElementById('before-code'),example.before,example.removed,'removed');renderCode(document.getElementById('after-code'),example.after,example.added,'added');document.querySelectorAll('.file-choice').forEach(button=>button.classList.toggle('is-selected',button.dataset.file===name));}
+    document.querySelectorAll('.file-choice').forEach(button=>button.addEventListener('click',()=>showFile(button.dataset.file)));
+    document.querySelectorAll('.filter-chip').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.filter-chip').forEach(item=>item.classList.toggle('is-active',item===button));document.getElementById('insight-title').textContent=button.dataset.title;document.getElementById('insight-priority').textContent=button.dataset.priority;document.getElementById('insight-priority').className='priority-'+button.dataset.level;document.getElementById('insight-detail').textContent=button.dataset.detail;}));
+    showFile('session');
+  </script>
 </body>
 </html>

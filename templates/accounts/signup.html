@@ -5,7 +5,36 @@
   <a class="skip-link" href="#signup-content">Skip to content</a>
   <main id="signup-content" class="login-layout">
     <section class="login-story" aria-labelledby="signup-welcome"><a class="brand brand-light" href="{% url 'home' %}"><img class="difftara-logo" src="{% static 'images/difftara-ai.svg' %}" alt="Difftara.ai"></a><p class="eyebrow">A clearer way to review projects</p><h1 id="signup-welcome">Good reviews start with good context.</h1><p class="story-copy">Bring requirements and source together, then turn changes into useful, evidence-based feedback.</p><div class="color-notes" aria-hidden="true"><i></i><i></i><i></i><i></i></div></section>
-    <section class="login-panel" aria-labelledby="signup-title"><div class="login-form-wrap"><p class="eyebrow">Get started</p><h2 id="signup-title">Create your Difftara.ai account</h2><p class="muted">Continue with Google or GitHub. A verified email is required.</p>{% include 'accounts/_social_auth.html' with action='Sign up' %}<p class="login-footnote">Already have an account? <a href="{% url 'login' %}">Sign in</a></p></div></section>
+    <section class="login-panel" aria-labelledby="signup-title"><div class="login-form-wrap"><p class="eyebrow">Get started</p><h2 id="signup-title">Create your Difftara.ai account</h2><p class="muted">Use email and password, or continue with Google or GitHub.</p>
+      <form id="email-signup-form" class="form-stack email-signup-form">{% csrf_token %}<div class="field"><label for="signup-email">Email</label><input id="signup-email" name="email" type="email" autocomplete="email" required></div><div class="field"><label for="signup-password">Password</label><input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required><small>At least 8 characters.</small></div><div class="field"><label for="signup-confirm">Confirm password</label><input id="signup-confirm" name="confirm_password" type="password" autocomplete="new-password" minlength="8" required></div><button class="button button-primary button-wide" type="submit">Create account <span aria-hidden="true">→</span></button></form>
+      <p class="login-footnote" id="signup-status" role="status" aria-live="polite"></p><div class="email-verification-note" hidden><span aria-hidden="true">✉</span><p><strong>Check your inbox</strong><br>We sent a verification link. Verify your email, then return here to sign in.</p><button id="resend-verification" class="button button-secondary button-small" type="button" hidden>Resend verification email</button></div>
+      {% include 'accounts/_social_auth.html' with action='Sign up' %}<p class="login-footnote">Already have an account? <a href="{% url 'login' %}">Sign in</a></p></div></section>
   </main>
+  <script>
+    const signupForm=document.getElementById('email-signup-form');
+    const signupStatus=document.getElementById('signup-status');
+    const verificationNote=document.querySelector('.email-verification-note');
+    const resendButton=document.getElementById('resend-verification');
+    let createdFirebaseUser=null;
+    const verificationSettings={url:`${location.origin}{% url 'login' %}?verified=1`,handleCodeInApp:false};
+    signupForm.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const password=signupForm.password.value;
+      if(password!==signupForm.confirm_password.value){signupStatus.textContent='Passwords do not match.';return;}
+      const button=signupForm.querySelector('button[type="submit"]');button.disabled=true;signupStatus.textContent='Creating your account…';
+      try {
+        const credential=await firebase.auth().createUserWithEmailAndPassword(signupForm.querySelector('[name="email"]').value,password);
+        createdFirebaseUser=credential.user;
+        await firebase.auth().sendEmailVerification(createdFirebaseUser,verificationSettings);
+        await firebase.auth().signOut();
+        createdFirebaseUser=null;signupForm.hidden=true;signupStatus.textContent='';verificationNote.hidden=false;
+      } catch(error) {
+        const errors={'auth/email-already-in-use':'An account with this email already exists. Sign in instead.','auth/invalid-email':'Enter a valid email address.','auth/weak-password':'Use a stronger password with at least 8 characters.'};
+        if(createdFirebaseUser){signupForm.hidden=true;verificationNote.hidden=false;resendButton.hidden=false;signupStatus.textContent='Your account was created, but we could not send the verification email. Try again.';}
+        else {signupStatus.textContent=errors[error.code]||firebaseErrorText(error);button.disabled=false;}
+      }
+    });
+    resendButton.addEventListener('click',async()=>{resendButton.disabled=true;try{await firebase.auth().sendEmailVerification(createdFirebaseUser,verificationSettings);await firebase.auth().signOut();createdFirebaseUser=null;resendButton.hidden=true;signupStatus.textContent='Verification email sent. Check your inbox.';}catch(error){signupStatus.textContent=firebaseErrorText(error);resendButton.disabled=false;}});
+  </script>
 </body>
 </html>

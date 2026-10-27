@@ -33,25 +33,20 @@ def logout_view(request):
     return redirect('login')
 import json
 import re
-from django.conf import settings
 from django.http import JsonResponse
 
 @require_POST
 def firebase_login_view(request):
     try:
-        token = json.loads(request.body).get('id_token', '')
+        payload = json.loads(request.body)
+        if not isinstance(payload, dict):
+            return JsonResponse({'error': 'Invalid sign-in request.'}, status=400)
+        token = payload.get('id_token', '')
         if not token or len(token) > 12000:
             return JsonResponse({'error': 'Invalid sign-in token.'}, status=400)
-        import firebase_admin
-        from firebase_admin import auth as firebase_auth
-        from firebase_admin import credentials
-        try:
-            app = firebase_admin.get_app()
-        except ValueError:
-            cred_path = getattr(settings, 'FIREBASE_SERVICE_ACCOUNT', '')
-            credential = credentials.Certificate(cred_path) if cred_path else credentials.ApplicationDefault()
-            app = firebase_admin.initialize_app(credential)
-        claims = firebase_auth.verify_id_token(token, app=app, check_revoked=True)
+        from google.auth.transport.requests import Request as GoogleAuthRequest
+        from google.oauth2 import id_token
+        claims = id_token.verify_firebase_token(token, GoogleAuthRequest(), audience='difftara-ai-139ec')
         email = claims.get('email', '').strip().lower()
         if not email or not claims.get('email_verified'):
             return JsonResponse({'error': 'Use a verified email address to continue.'}, status=403)
@@ -68,6 +63,9 @@ def firebase_login_view(request):
         login(request, user)
         return JsonResponse({'ok': True})
     except (ValueError, KeyError, json.JSONDecodeError):
-        return JsonResponse({'error': 'Invalid sign-in request.'}, status=400)
-    except Exception:
-        return JsonResponse({'error': 'Social sign-in is not configured on the server.'}, status=503)
+        return JsonResponse({'error': 'This sign-in token is invalid or expired. Please sign in again.'}, status=401)
+    except Exception as exc:
+        from google.auth.exceptions import GoogleAuthError
+        if isinstance(exc, GoogleAuthError):
+            return JsonResponse({'error': 'Identity verification is temporarily unavailable. Please try again.'}, status=503)
+        return JsonResponse({'error': 'Sign-in could not be completed. Please try again.'}, status=503)
