@@ -29,8 +29,10 @@
         await firebase.auth().signOut();
         createdFirebaseUser=null;signupForm.hidden=true;signupStatus.textContent='';verificationNote.hidden=false;
       } catch(error) {
-        const errors={'auth/email-already-in-use':'An account with this email already exists. Sign in instead.','auth/invalid-email':'Enter a valid email address.','auth/weak-password':'Use a stronger password with at least 8 characters.'};
-        if(createdFirebaseUser){signupForm.hidden=true;verificationNote.hidden=false;resendButton.hidden=false;signupStatus.textContent='Your account was created, but we could not send the verification email. Try again.';}
+        const errors={'auth/invalid-email':'Enter a valid email address.','auth/weak-password':'Use a stronger password with at least 8 characters.'};
+        if(error.code==='auth/email-already-in-use'){
+          location.href='{% url "login" %}?account=exists&email='+encodeURIComponent(signupForm.querySelector('[name="email"]').value);
+        } else if(createdFirebaseUser){signupForm.hidden=true;verificationNote.hidden=false;resendButton.hidden=false;signupStatus.textContent='Your account was created, but we could not send the verification email. Try again.';}
         else {signupStatus.textContent=errors[error.code]||firebaseErrorText(error);button.disabled=false;}
       }
     });

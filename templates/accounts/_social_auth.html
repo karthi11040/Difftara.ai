@@ -1,10 +1,10 @@
 <div class="oauth-divider"><span>or continue with</span></div>
 <div class="oauth-actions">
-  <button class="button button-secondary button-wide oauth-button" type="button" data-provider="google">
+  <button class="button button-secondary button-wide oauth-button" type="button" data-provider="google" data-action="{{ action|lower|cut:' ' }}">
     <svg class="provider-logo google-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"/><path fill="#34A853" d="M24 44c5.5 0 10.1-1.8 13.5-4.8l-6.6-5.1c-1.8 1.2-4 2-6.9 2-5.3 0-9.8-3.6-11.4-8.4H5.8V33c3.4 6.7 10.3 11 18.2 11Z"/><path fill="#FBBC05" d="M12.6 27.7a12 12 0 0 1 0-7.4v-5H5.8a20 20 0 0 0 0 17.4l6.8-5Z"/><path fill="#EA4335" d="M24 12c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6 29.5 4 24 4 16.1 4 9.2 8.3 5.8 15l6.8 5C14.2 15.6 18.7 12 24 12Z"/></svg>
     {{ action }} with Google
   </button>
-  <button class="button button-secondary button-wide oauth-button" type="button" data-provider="github">
+  <button class="button button-secondary button-wide oauth-button" type="button" data-provider="github" data-action="{{ action|lower|cut:' ' }}">
     <svg class="provider-logo github-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.6.1.8-.3.8-.6v-2.1c-3.1.7-3.8-1.3-3.8-1.3-.5-1.3-1.2-1.7-1.2-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.8 1.9 3.4 1.4.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.5 0-1.2.4-2.2 1.1-3-.1-.3-.5-1.5.1-3.1 0 0 .9-.3 3.1 1.1a10.7 10.7 0 0 1 5.7 0c2.2-1.5 3.1-1.1 3.1-1.1.6 1.6.2 2.8.1 3.1.7.8 1.1 1.8 1.1 3 0 4.2-2.6 5.2-5.1 5.5.4.3.8 1 .8 2v3c0 .3.2.7.8.6A11.1 11.1 0 0 0 12 .9Z"/></svg>
     {{ action }} with GitHub
   </button>
@@ -17,7 +17,7 @@
     'auth/operation-not-allowed':'Enable this sign-in provider in Firebase Console.',
     'auth/unauthorized-domain':'Add localhost and 127.0.0.1 to Firebase Authentication → Settings → Authorized domains.',
     'auth/unauthorized-continue-uri':'Add this site to Firebase Authentication → Settings → Authorized domains.',
-    'auth/invalid-oauth-client-id':'Add the GitHub OAuth app client ID and secret in Firebase Authentication → GitHub provider settings.',
+    'auth/invalid-oauth-client-id':'The OAuth client does not match this provider. Check its client ID and secret in Firebase Authentication settings.',
     'auth/missing-client-identifier':'Add the GitHub OAuth app client ID and secret in Firebase Authentication → GitHub provider settings.',
     'auth/popup-blocked':'Your browser blocked the sign-in popup. Allow popups for this site and try again.',
     'auth/popup-closed-by-user':'The sign-in window closed before sign-in finished.',
@@ -25,7 +25,8 @@
     'auth/invalid-api-key':'Firebase configuration is invalid. Check the web app API key.',
     'auth/invalid-credential':'Email or password is incorrect.',
     'auth/invalid-login-credentials':'Email or password is incorrect.',
-    'auth/user-not-found':'No account was found for that email.',
+    'auth/user-not-found':'No account was found for that email. Create one with the link below.',
+    'auth/account-exists-with-different-credential':'This email already uses another sign-in method. Use that provider on the log-in page.',
     'auth/wrong-password':'Email or password is incorrect.'
   };
   function firebaseErrorText(error){return firebaseErrorMessages[error.code]||error.message||'Sign-in failed. Please try again.';}
@@ -38,12 +39,20 @@
   }
   document.querySelectorAll('[data-provider]').forEach(button=>button.addEventListener('click',async()=>{
     const status=document.getElementById('oauth-status');
+    button.disabled=true;
+    status.textContent='Opening secure sign-in…';
     try {
       const Provider=button.dataset.provider==='google'?firebase.auth.GoogleAuthProvider:firebase.auth.GithubAuthProvider;
       const provider=new Provider();
       if(button.dataset.provider==='github') provider.addScope('user:email');
       const result=await firebase.auth().signInWithPopup(provider);
+      if(button.dataset.action==='signup' && result.additionalUserInfo && !result.additionalUserInfo.isNewUser){
+        const email=result.user.email||'';
+        await firebase.auth().signOut();
+        location.href='{% url "login" %}?account=exists&email='+encodeURIComponent(email);
+        return;
+      }
       await finishFirebaseSignIn(result.user);
-    } catch(error) { status.textContent=firebaseErrorText(error); }
+    } catch(error) { status.textContent=firebaseErrorText(error);button.disabled=false; }
   }));
 </script>

@@ -24,7 +24,7 @@
         {% if messages %}<div class="flash-stack" role="alert">{% for message in messages %}<div class="flash flash-error">{{ message }}</div>{% endfor %}</div>{% endif %}
         <form id="email-login-form" class="form-stack">
           {% csrf_token %}
-          <div class="field"><label for="email-login">Email</label><input id="email-login" name="email" type="email" autocomplete="email" required autofocus></div>
+          <div class="field"><label for="email-login">Email</label><input id="email-login" name="email" type="email" value="{{ request.GET.email|default:'' }}" autocomplete="email" required autofocus></div>
           <div class="field"><label for="email-password">Password</label><input id="email-password" name="password" type="password" autocomplete="current-password" required></div>
           <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">→</span></button>
         </form>
@@ -36,7 +36,9 @@
   <script>
     const emailLogin=document.getElementById('email-login-form');
     const authStatus=document.getElementById('oauth-status');
-    if(new URLSearchParams(location.search).get('verified')==='1') authStatus.textContent='Email verified. Sign in to continue.';
+    const query=new URLSearchParams(location.search);
+    if(query.get('verified')==='1') authStatus.textContent='Email verified. Sign in to continue.';
+    if(query.get('account')==='exists') authStatus.textContent='That account already exists. Sign in with it below.';
     emailLogin.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=emailLogin.querySelector('button[type="submit"]');button.disabled=true;authStatus.textContent='Signing in…';

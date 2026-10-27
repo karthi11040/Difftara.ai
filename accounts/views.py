@@ -7,9 +7,6 @@ def landing_view(request):
     return render(request, 'home.html')
 
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-
     if request.method == 'POST':
         user_input = request.POST.get('username')
         password_input = request.POST.get('password')
@@ -24,7 +21,7 @@ def login_view(request):
 
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('login')
     return render(request, 'accounts/signup.html')
 
 @require_POST
@@ -53,6 +50,8 @@ def firebase_login_view(request):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.filter(email__iexact=email).first()
+        if user and not user.is_active:
+            return JsonResponse({'error': 'This account is disabled. Contact your administrator.'}, status=403)
         if user is None:
             base = re.sub(r'[^a-zA-Z0-9_.-]', '', email.split('@')[0])[:120] or 'user'
             username, suffix = base, 1
