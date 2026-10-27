@@ -28,7 +28,6 @@
           <div class="field"><label for="email-password">Password</label><input id="email-password" name="password" type="password" autocomplete="current-password" required></div>
           <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">→</span></button>
         </form>
-        <details class="local-login"><summary>Sign in with a workspace account</summary><form method="post" action="{% url 'login' %}" class="form-stack">{% csrf_token %}<div class="field"><label for="username">Username</label><input id="username" name="username" type="text" autocomplete="username" required></div><div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div><button class="button button-secondary button-wide" type="submit">Continue with workspace account</button></form></details>
         {% include 'accounts/_social_auth.html' with action='Sign in' %}
         <p class="login-footnote">New to Difftara.ai? <a href="{% url 'signup' %}">Create an account</a></p>
       </div>
