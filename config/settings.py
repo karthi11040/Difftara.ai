@@ -112,3 +112,5 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 # Firebase Google/GitHub sign-in uses a popup that must report back to this window.
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+# Users stay signed in for 30 days, then must log in again.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
