@@ -21,6 +21,7 @@
     'auth/missing-client-identifier':'Add the GitHub OAuth app client ID and secret in Firebase Authentication → GitHub provider settings.',
     'auth/popup-blocked':'Your browser blocked the sign-in popup. Allow popups for this site and try again.',
     'auth/popup-closed-by-user':'The sign-in window closed before sign-in finished.',
+    'auth/cancelled-popup-request':'Another sign-in window was already open. Try again.',
     'auth/network-request-failed':'Firebase could not connect. Check your internet connection.',
     'auth/invalid-api-key':'Firebase configuration is invalid. Check the web app API key.',
     'auth/invalid-credential':'Email or password is incorrect.',
@@ -30,6 +31,10 @@
     'auth/wrong-password':'Email or password is incorrect.'
   };
   function firebaseErrorText(error){return firebaseErrorMessages[error.code]||error.message||'Sign-in failed. Please try again.';}
+  // Firebase authorizes 'localhost' by default, not '127.0.0.1'
+  if (location.hostname === '127.0.0.1') {
+    location.replace(location.href.replace('//127.0.0.1', '//localhost'));
+  }
   if (window.firebase && !firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyBdOsGzbh_Im3X4KgZluo1o1EgGTKK7BeM",authDomain:"difftara-ai-139ec.firebaseapp.com",projectId:"difftara-ai-139ec",appId:"1:164065747404:web:dde7e02fe66512d6ac7d69"});
   async function finishFirebaseSignIn(user){
     const response=await fetch('{% url "firebase_login" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({id_token:await user.getIdToken(true)})});
@@ -46,13 +51,24 @@
       const provider=new Provider();
       if(button.dataset.provider==='github') provider.addScope('user:email');
       const result=await firebase.auth().signInWithPopup(provider);
-      if(button.dataset.action==='signup' && result.additionalUserInfo && !result.additionalUserInfo.isNewUser){
+      const isNewUser=Boolean(result.additionalUserInfo && result.additionalUserInfo.isNewUser);
+      if(button.dataset.action==='signup' && !isNewUser){
+        // Account already exists: send the user to the log-in page instead of signing up again.
         const email=result.user.email||'';
         await firebase.auth().signOut();
         location.href='{% url "login" %}?account=exists&email='+encodeURIComponent(email);
         return;
       }
+      // On the log-in page a brand-new identity simply creates the account and signs in.
+      status.textContent=isNewUser?'No account yet — creating one for you…':'Signing you in…';
       await finishFirebaseSignIn(result.user);
-    } catch(error) { status.textContent=firebaseErrorText(error);button.disabled=false; }
+    } catch(error) {
+      if(error.code==='auth/account-exists-with-different-credential' && button.dataset.action==='signup'){
+        location.href='{% url "login" %}?account=exists&email='+encodeURIComponent((error.customData&&error.customData.email)||error.email||'');
+        return;
+      }
+      if(firebase.auth().currentUser) await firebase.auth().signOut().catch(()=>{});
+      status.textContent=firebaseErrorText(error);button.disabled=false;
+    }
   }));
 </script>

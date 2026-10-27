@@ -109,4 +109,6 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = 'same-origin'
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+# Firebase Google/GitHub sign-in uses a popup that must report back to this window.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'

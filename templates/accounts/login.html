@@ -20,7 +20,7 @@
       <div class="login-form-wrap">
         <p class="eyebrow">Welcome back</p>
         <h2 id="login-title">Sign in to your workspace</h2>
-        <p class="muted">Sign in with your email or connected identity.</p>
+        <p class="muted">Sign in with your email or connected identity. No account yet? Signing in with Google or GitHub creates one for you.</p>
         {% if messages %}<div class="flash-stack" role="alert">{% for message in messages %}<div class="flash flash-error">{{ message }}</div>{% endfor %}</div>{% endif %}
         <form id="email-login-form" class="form-stack">
           {% csrf_token %}

@@ -45,14 +45,19 @@ def firebase_login_view(request):
         from google.oauth2 import id_token
         claims = id_token.verify_firebase_token(token, GoogleAuthRequest(), audience='difftara-ai-139ec')
         email = claims.get('email', '').strip().lower()
-        if not email or not claims.get('email_verified'):
+        # Firebase reports GitHub emails as unverified, but GitHub only hands out the account's verified primary email.
+        provider = claims.get('firebase', {}).get('sign_in_provider', '')
+        if not email:
+            return JsonResponse({'error': 'Your account has no public email. Add one to your provider account and try again.'}, status=403)
+        if not claims.get('email_verified') and provider not in ('google.com', 'github.com'):
             return JsonResponse({'error': 'Use a verified email address to continue.'}, status=403)
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.filter(email__iexact=email).first()
         if user and not user.is_active:
             return JsonResponse({'error': 'This account is disabled. Contact your administrator.'}, status=403)
-        if user is None:
+        created = user is None
+        if created:
             base = re.sub(r'[^a-zA-Z0-9_.-]', '', email.split('@')[0])[:120] or 'user'
             username, suffix = base, 1
             while User.objects.filter(username=username).exists():
@@ -60,7 +65,7 @@ def firebase_login_view(request):
                 username = f'{base[:120-len(str(suffix))]}{suffix}'
             user = User.objects.create_user(username=username, email=email)
         login(request, user)
-        return JsonResponse({'ok': True})
+        return JsonResponse({'ok': True, 'created': created})
     except (ValueError, KeyError, json.JSONDecodeError):
         return JsonResponse({'error': 'This sign-in token is invalid or expired. Please sign in again.'}, status=401)
     except Exception as exc:
