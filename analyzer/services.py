@@ -1,7 +1,7 @@
 import os
 import re
 import ast
-from pathlib import Path
+from collections import Counter
 
 STOP_WORDS = {'the', 'system', 'shall', 'user', 'allow', 'must', 'should', 'provide', 'support', 'with', 'from', 'that', 'this', 'for', 'and', 'are'}
 
@@ -22,7 +22,7 @@ class ProjectAnalyzer:
             dirs[:] = [d for d in dirs if d not in ignore_dirs]
             for file in files:
                 _, ext = os.path.splitext(file.lower())
-                if ext in ['.py', '.html', '.css', '.js', '.md', '.txt', '.json', '.sh', '.yml', '.yaml', '.csv']:
+                if ext in ['.py', '.html', '.css', '.js', '.jsx', '.ts', '.tsx', '.java', '.c', '.h', '.cpp', '.cs', '.go', '.rs', '.php', '.rb', '.swift', '.kt', '.sql', '.md', '.txt', '.json', '.sh', '.yml', '.yaml', '.csv']:
                     full_path = os.path.join(root, file)
                     rel_path = os.path.relpath(full_path, extracted_path).replace('\\', '/')
                     try:
@@ -40,6 +40,8 @@ class ProjectAnalyzer:
         py_files = {path: content for path, content in source_files.items() if path.endswith('.py')}
         classes = []
         functions = []
+        variables = []
+        has_exception_handling = False
         lines_of_code = 0
         has_tests = False
         test_files = []
@@ -56,10 +58,15 @@ class ProjectAnalyzer:
             try:
                 tree = ast.parse(content, filename=rel_path)
                 for node in ast.walk(tree):
+                    if isinstance(node, ast.Try):
+                        has_exception_handling = True
                     if isinstance(node, ast.ClassDef):
                         classes.append({'name': node.name, 'file': rel_path, 'line': node.lineno})
-                    elif isinstance(node, ast.FunctionDef):
-                        functions.append({'name': node.name, 'file': rel_path, 'line': node.lineno, 'args': [a.arg for a in node.args.args]})
+                    elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        functions.append({'name': node.name, 'file': rel_path, 'line': node.lineno, 'end_line': node.end_lineno or node.lineno, 'args': [a.arg for a in node.args.args]})
+                        variables.extend({'name': arg.arg, 'file': rel_path, 'line': node.lineno} for arg in node.args.args)
+                    elif isinstance(node, ast.Name):
+                        variables.append({'name': node.id, 'file': rel_path, 'line': node.lineno})
             except SyntaxError:
                 # Fallback to regex parsing if AST fails
                 for i, line in enumerate(lines, 1):
@@ -75,6 +82,8 @@ class ProjectAnalyzer:
             'total_lines_of_code': lines_of_code,
             'classes': classes,
             'functions': functions,
+            'variables': variables,
+            'has_exception_handling': has_exception_handling,
             'has_tests': has_tests or any('/tests/' in p or p.startswith('tests/') for p in source_files.keys()),
             'test_files_count': len(test_files),
             'has_readme': has_readme
@@ -95,6 +104,7 @@ class RequirementMatcher:
         Returns dict with status, evidence_file, evidence_function, description, suggestion, priority.
         """
         keywords = RequirementMatcher.extract_keywords(req.description)
+        needs_manual_review = not keywords
         if not keywords:
             keywords = [req.category.lower()]
 
@@ -129,7 +139,10 @@ class RequirementMatcher:
                 matches_count += file_match_score
 
         # SRS Rule logic
-        if matches_count >= 3 or len(matched_functions) >= 1:
+        if needs_manual_review:
+            status = 'Manual Review'
+            suggestion = 'This requirement has no distinctive searchable terms. Confirm the expected behavior and evidence manually.'
+        elif matches_count >= 3 or len(matched_functions) >= 1:
             status = 'Implemented'
             suggestion = 'Maintain clean separation of concerns and ensure full unit test coverage.'
         elif matches_count >= 1 or len(matched_files) >= 1:
@@ -156,34 +169,18 @@ class QualityChecker:
     @staticmethod
     def check_quality(source_files, py_inspection):
         """
-        Runs code quality rules:
-        - Long functions (> 35 lines)
-        - snake_case naming for Python functions
+        Runs lightweight, text/AST-based quality rules; it never executes source.
         - Exception handling (try/except)
         - Hardcoded secret / password pattern
         - README documentation
         """
         findings = []
         passed_rules = 0
-        total_rules = 5
+        total_rules = 7
 
-        # Rule 1: Function Length
         py_files = {p: c for p, c in source_files.items() if p.endswith('.py')}
-        long_fns = []
-        for p, content in py_files.items():
-            lines = content.splitlines()
-            current_fn = None
-            fn_len = 0
-            for line in lines:
-                if line.strip().startswith('def '):
-                    if current_fn and fn_len > 35:
-                        long_fns.append((current_fn, p, fn_len))
-                    current_fn = line.strip().split('(')[0].replace('def ', '')
-                    fn_len = 1
-                elif current_fn:
-                    fn_len += 1
-            if current_fn and fn_len > 35:
-                long_fns.append((current_fn, p, fn_len))
+        long_fns = [(fn['name'], fn['file'], fn['end_line'] - fn['line'] + 1)
+                    for fn in py_inspection.get('functions', []) if fn.get('end_line', fn['line']) - fn['line'] + 1 > 35]
 
         if long_fns:
             fn_desc = ", ".join([f"{name} ({length} lines)" for name, path, length in long_fns[:3]])
@@ -206,14 +203,18 @@ class QualityChecker:
             name = fn['name']
             if not name.startswith('__') and not re.match(r'^[a-z_][a-z0-9_]*$', name):
                 non_snake.append(f"{name} ({fn['file']})")
+        for variable in py_inspection.get('variables', []):
+            name = variable['name']
+            if not re.match(r'^(?:[A-Z][A-Z0-9_]*|[a-z_][a-z0-9_]*)$', name):
+                non_snake.append(f"{name} ({variable['file']})")
 
         if non_snake:
             findings.append({
                 'category': 'Quality',
                 'title': 'Naming Convention Deviation',
                 'status': 'Partial',
-                'evidence_file': py_inspection.get('functions', [{}])[0].get('file', 'N/A'),
-                'evidence_function': non_snake[0],
+                'evidence_file': next((fn['file'] for fn in py_inspection.get('functions', []) if f"{fn['name']} ({fn['file']})" == non_snake[0]), 'N/A'),
+                'evidence_function': non_snake[0].split(' (', 1)[0],
                 'description': f"Found functions not following PEP8 snake_case: {', '.join(non_snake[:3])}.",
                 'suggestion': 'Rename function identifiers to use snake_case for standard Python styling.',
                 'priority': 'Low'
@@ -221,8 +222,38 @@ class QualityChecker:
         else:
             passed_rules += 1
 
+        # Rule 6: Repeated non-trivial source lines across files.
+        repeated_lines = Counter(
+            line.strip() for content in source_files.values() for line in content.splitlines()
+            if len(line.strip()) >= 32 and not line.lstrip().startswith(('#', '//', '*'))
+        )
+        duplicates = [line for line, count in repeated_lines.items() if count > 1]
+        if duplicates:
+            findings.append({
+                'category': 'Quality', 'title': 'Repeated Source Lines', 'status': 'Partial',
+                'evidence_file': 'Multiple files', 'evidence_function': 'N/A',
+                'description': f'Found {len(duplicates)} repeated non-trivial source line(s).',
+                'suggestion': 'Review repeated logic and extract shared behavior where that makes the code clearer.',
+                'priority': 'Low'
+            })
+        else:
+            passed_rules += 1
+
+        # Rule 7: Python modules should not all accumulate at the project root.
+        root_modules = [path for path in py_files if '/' not in path.replace('\\', '/')]
+        if len(root_modules) > 5:
+            findings.append({
+                'category': 'Quality', 'title': 'Many Python Modules at Project Root', 'status': 'Partial',
+                'evidence_file': root_modules[0], 'evidence_function': 'N/A',
+                'description': f'Found {len(root_modules)} Python modules at the project root.',
+                'suggestion': 'Group related modules into packages when that improves navigation and ownership.',
+                'priority': 'Low'
+            })
+        else:
+            passed_rules += 1
+
         # Rule 3: Exception Handling
-        has_try_except = any('try:' in content and 'except' in content for content in py_files.values())
+        has_try_except = py_inspection.get('has_exception_handling', False)
         if has_try_except:
             passed_rules += 1
         else:

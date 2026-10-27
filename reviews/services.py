@@ -9,12 +9,13 @@ from requirements_app.models import Requirement
 from reviews.models import Review, Finding, MentorReview
 from activities.models import ActivityService
 from analyzer.services import ProjectAnalyzer, RequirementMatcher, QualityChecker, ScoreCalculator
+from reviews.code_review import _ask_ai
 
 logger = logging.getLogger(__name__)
 
 class ReviewService:
     @staticmethod
-    def run_review(project, mentor_user=None):
+    def run_review(project, mentor_user=None, ai_provider='rules', ai_api_key='', ai_base_url='', ai_model=''):
         """
         Executes the full automated review pipeline for a given Project.
         """
@@ -55,6 +56,20 @@ class ReviewService:
             # 4. Quality checks
             quality_score, quality_findings = QualityChecker.check_quality(source_files, py_inspection)
 
+            ai_review = ''
+            ai_review_error = ''
+            if ai_provider in {'gensara', 'custom', 'local'}:
+                try:
+                    ai_review = _ask_ai(
+                        source_files, ai_provider, ai_api_key, ai_base_url, ai_model,
+                        requirements=[{'id': req.requirement_id, 'description': req.description, 'category': req.category} for req in requirements],
+                    )
+                except ValidationError as exc:
+                    ai_review_error = exc.messages[0]
+                except Exception:
+                    logger.exception('Optional AI review failed for project %s', project.pk)
+                    ai_review_error = 'The optional AI review could not complete. The rule-based review is still available.'
+
             with transaction.atomic():
                 # 5. Create Review object
                 review = Review.objects.create(
@@ -64,6 +79,10 @@ class ReviewService:
                     overall_score=0,
                     compliance_score=0.0,
                     quality_score=quality_score,
+                    ai_review=ai_review,
+                    ai_review_error=ai_review_error,
+                    ai_provider=ai_provider if ai_provider in {'gensara', 'custom', 'local'} else 'rules',
+                    ai_model=ai_model[:200],
                     testing_score=0.0,
                     doc_score=0.0
                 )

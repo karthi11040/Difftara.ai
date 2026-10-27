@@ -6,12 +6,14 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from django.contrib.auth import authenticate, login
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from accounts.models import User
 from projects.models import Project
 from reviews.models import Review, Finding, MentorReview
 from activities.models import Activity, ActivityService
 from reviews.services import ReviewService
+from projects.permissions import can_manage_project, get_user_project, visible_projects
 from projects.serializers import (
     UserSerializer, ProjectSerializer, RequirementSerializer, 
     ReviewSerializer, FindingSerializer, ActivitySerializer
@@ -31,27 +33,36 @@ def api_login(request):
             'message': 'Login successful',
             'user': UserSerializer(user).data
         })
-    return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def api_projects(request):
     if request.method == 'GET':
-        if request.user.is_mentor_user:
-            projects = Project.objects.all().order_by('-created_at')
-        else:
-            projects = Project.objects.filter(owner=request.user).order_by('-created_at')
+        projects = visible_projects(request.user).filter(is_archived=False).order_by('-created_at')
         serializer = ProjectSerializer(projects, many=True)
         return Response(serializer.data)
 
     elif request.method == 'POST':
         if not request.user.is_mentor_user:
             return Response({'error': 'Only mentors and admins can create/upload projects'}, status=status.HTTP_403_FORBIDDEN)
-        
+        owner_id = request.data.get('owner_id')
+        if not owner_id:
+            return Response({'error': 'Choose a student or intern as the project owner.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            owner = User.objects.get(pk=owner_id, role=User.STUDENT, is_active=True)
+        except (User.DoesNotExist, ValueError, TypeError):
+            return Response({'error': 'Choose an active student or intern as the project owner.'}, status=status.HTTP_400_BAD_REQUEST)
+        assigned_mentor = request.user
+        if request.user.is_admin_user and request.data.get('assigned_mentor_id'):
+            try:
+                assigned_mentor = User.objects.get(pk=request.data['assigned_mentor_id'], role=User.MENTOR, is_active=True)
+            except (User.DoesNotExist, ValueError, TypeError):
+                return Response({'error': 'Choose an active mentor or leave the project assigned to you.'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = ProjectSerializer(data=request.data)
         if serializer.is_valid():
-            project = serializer.save(owner=request.user)
+            project = serializer.save(owner=owner, assigned_mentor=assigned_mentor)
             ActivityService.record(
                 user=request.user,
                 project=project,
@@ -64,9 +75,9 @@ def api_projects(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_project_detail(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner != request.user:
-        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
+        return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = ProjectSerializer(project)
     data = serializer.data
@@ -81,12 +92,23 @@ def api_project_detail(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_start_review(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user:
+    project = get_user_project(request.user, pk)
+    if not can_manage_project(request.user, project):
         return Response({'error': 'Only mentors and admins can initiate reviews'}, status=status.HTTP_403_FORBIDDEN)
+    if project.is_archived:
+        return Response({'error': 'Restore the project before starting a review.'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        review = ReviewService.run_review(project, mentor_user=request.user)
+        ai_provider = request.data.get('ai_provider', 'rules')
+        if not isinstance(ai_provider, str) or ai_provider not in {'rules', 'gensara', 'custom', 'local'}:
+            return Response({'error': 'Invalid AI provider.'}, status=status.HTTP_400_BAD_REQUEST)
+        ai_values = [request.data.get(key, '') for key in ('ai_api_key', 'ai_base_url', 'ai_model')]
+        if any(not isinstance(value, str) for value in ai_values):
+            return Response({'error': 'AI provider settings must be strings.'}, status=status.HTTP_400_BAD_REQUEST)
+        review = ReviewService.run_review(
+            project, mentor_user=request.user, ai_provider=ai_provider,
+            ai_api_key=ai_values[0].strip(), ai_base_url=ai_values[1].strip(), ai_model=ai_values[2].strip(),
+        )
         return Response(ReviewSerializer(review).data, status=status.HTTP_200_OK)
     except ValidationError as exc:
         return Response({'error': exc.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
@@ -97,9 +119,9 @@ def api_start_review(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_get_findings(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner_id != request.user.id:
-        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
+        return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
     review = project.reviews.filter(status='completed').order_by('-created_at').first()
     if not review:
         return Response({'error': 'No review found for this project'}, status=status.HTTP_404_NOT_FOUND)
@@ -114,6 +136,8 @@ def api_save_mentor_review(request, finding_pk):
         return Response({'error': 'Only mentors and admins can override findings'}, status=status.HTTP_403_FORBIDDEN)
 
     finding = get_object_or_404(Finding, pk=finding_pk)
+    if not can_manage_project(request.user, finding.review.project):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
     final_status = request.data.get('final_status')
     comment = request.data.get('comment', '')
     is_correct = request.data.get('is_correct', True)
@@ -149,9 +173,9 @@ def api_save_mentor_review(request, finding_pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_get_report(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner_id != request.user.id:
-        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
+        return Response({'error': 'Project not found'}, status=status.HTTP_404_NOT_FOUND)
     review = project.reviews.filter(status='completed').order_by('-created_at').first()
     if not review:
         return Response({'error': 'No review report available yet.'}, status=status.HTTP_404_NOT_FOUND)
@@ -174,8 +198,10 @@ def api_get_report(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_activities(request):
-    if request.user.is_mentor_user:
+    if request.user.is_admin_user:
         activities = Activity.objects.all()[:50]
+    elif request.user.role == User.MENTOR:
+        activities = Activity.objects.filter(Q(project__assigned_mentor=request.user) | Q(user=request.user, project__isnull=True))[:50]
     else:
         activities = Activity.objects.filter(user=request.user)[:50]
     serializer = ActivitySerializer(activities, many=True)

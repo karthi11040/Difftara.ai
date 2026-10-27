@@ -27,12 +27,14 @@ class DashboardViewTestCase(TestCase):
         self.student_project = Project.objects.create(
             name='Student project',
             owner=self.student,
+            assigned_mentor=self.mentor,
             zip_file='zips/student-project.zip',
             status='completed',
         )
         self.other_project = Project.objects.create(
             name='Other project',
             owner=self.other_student,
+            assigned_mentor=self.mentor,
             zip_file='zips/other-project.zip',
             status='completed',
         )

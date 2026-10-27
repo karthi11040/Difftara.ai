@@ -15,18 +15,19 @@ from activities.models import Activity, ActivityService
 from reviews.services import ReviewService
 from analyzer.services import ProjectAnalyzer
 from projects.utils import validate_zip_upload, validate_srs_upload
+from projects.permissions import can_manage_project, get_user_project, visible_projects
 
 logger = logging.getLogger(__name__)
 
 @login_required
 def dashboard_view(request):
-    if request.user.is_mentor_user:
-        project_queryset = Project.objects.all()
-        review_queryset = Review.objects.all()
+    project_queryset = visible_projects(request.user).filter(is_archived=False)
+    review_queryset = Review.objects.filter(project__in=project_queryset)
+    if request.user.is_admin_user:
         activities = Activity.objects.all()[:15]
+    elif request.user.role == User.MENTOR:
+        activities = Activity.objects.filter(Q(project__assigned_mentor=request.user) | Q(user=request.user, project__isnull=True))[:15]
     else:
-        project_queryset = Project.objects.filter(owner=request.user)
-        review_queryset = Review.objects.filter(project__owner=request.user)
         activities = Activity.objects.filter(user=request.user)[:15]
 
     projects = list(
@@ -64,16 +65,15 @@ def dashboard_view(request):
 
 @login_required
 def project_list_view(request):
-    if request.user.is_mentor_user:
-        project_queryset = Project.objects.all()
-    else:
-        project_queryset = Project.objects.filter(owner=request.user)
+    can_see_archived = request.user.is_mentor_user
+    show_archived = can_see_archived and request.GET.get('archived') == '1'
+    project_queryset = visible_projects(request.user).filter(is_archived=show_archived)
     projects = project_queryset.order_by('-created_at').prefetch_related(
         Prefetch('reviews', queryset=Review.objects.filter(status='completed').order_by('-created_at'), to_attr='list_reviews')
     )
     for project in projects:
         project.latest_review = project.list_reviews[0] if project.list_reviews else None
-    return render(request, 'project_list.html', {'projects': projects})
+    return render(request, 'project_list.html', {'projects': projects, 'show_archived': show_archived, 'can_see_archived': can_see_archived})
 
 @login_required
 def upload_project_view(request):
@@ -89,12 +89,14 @@ def upload_project_view(request):
         manual_reqs = request.POST.getlist('req_desc')
         manual_ids = request.POST.getlist('req_id')
         manual_cats = request.POST.getlist('req_cat')
-        students = User.objects.filter(role=User.STUDENT).order_by('username')
+        students = User.objects.filter(role=User.STUDENT, is_active=True).order_by('username')
+        mentors = User.objects.filter(role=User.MENTOR, is_active=True).order_by('username')
 
         def render_form():
             return render(request, 'upload_project.html', {
                 'students': students,
-                'form_data': {'name': name, 'description': description},
+                'mentors': mentors,
+                'form_data': {'name': name, 'description': description, 'owner_id': request.POST.get('owner_id', '')},
             })
 
         if not name or not zip_file:
@@ -131,10 +133,23 @@ def upload_project_view(request):
             normalized_requirements.append((next_id, req_desc, req_cat))
         entered_requirements = normalized_requirements
 
-        owner = request.user
         owner_id = request.POST.get('owner_id')
-        if owner_id:
-            owner = get_object_or_404(User, pk=owner_id, role=User.STUDENT)
+        if not owner_id:
+            messages.error(request, 'Choose the student or intern who owns this project.')
+            return render_form()
+        try:
+            owner = User.objects.get(pk=owner_id, role=User.STUDENT, is_active=True)
+        except (User.DoesNotExist, ValueError, TypeError):
+            messages.error(request, 'Choose an active student or intern as the project owner.')
+            return render_form()
+        assigned_mentor = request.user
+        assigned_mentor_id = request.POST.get('assigned_mentor_id')
+        if request.user.is_admin_user and assigned_mentor_id:
+            try:
+                assigned_mentor = User.objects.get(pk=assigned_mentor_id, role=User.MENTOR, is_active=True)
+            except (User.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'Choose an active mentor or leave the project assigned to you.')
+                return render_form()
 
         try:
             with transaction.atomic():
@@ -142,6 +157,7 @@ def upload_project_view(request):
                     name=name,
                     description=description,
                     owner=owner,
+                    assigned_mentor=assigned_mentor,
                     zip_file=zip_file,
                     srs_file=srs_file
                 )
@@ -168,16 +184,19 @@ def upload_project_view(request):
             logger.exception('Project upload failed for user %s', request.user.pk)
             messages.error(request, 'The project could not be saved. Please try again.')
 
-    return render(request, 'upload_project.html', {'students': User.objects.filter(role=User.STUDENT).order_by('username')})
+    return render(request, 'upload_project.html', {
+        'students': User.objects.filter(role=User.STUDENT, is_active=True).order_by('username'),
+        'mentors': User.objects.filter(role=User.MENTOR, is_active=True).order_by('username'),
+    })
 
 @login_required
 def project_detail_view(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner != request.user:
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
         raise PermissionDenied
 
     if request.method == 'POST':
-        if not request.user.is_mentor_user:
+        if not can_manage_project(request.user, project):
             raise PermissionDenied
         req_id = request.POST.get('requirement_id', '').strip()
         description = request.POST.get('description', '').strip()
@@ -220,14 +239,23 @@ def project_detail_view(request, pk):
 @login_required
 @require_POST
 def start_review_view(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user:
-        messages.error(request, 'Only Mentors and Admins can run reviews.')
-        return redirect('project_detail', pk=pk)
+    project = get_user_project(request.user, pk)
+    if not can_manage_project(request.user, project):
+        raise PermissionDenied
 
     try:
-        review = ReviewService.run_review(project, mentor_user=request.user)
+        ai_provider = request.POST.get('ai_provider', 'rules')
+        if ai_provider not in {'rules', 'gensara', 'custom', 'local'}:
+            ai_provider = 'rules'
+        review = ReviewService.run_review(
+            project, mentor_user=request.user, ai_provider=ai_provider,
+            ai_api_key=request.POST.get('ai_api_key', '').strip(),
+            ai_base_url=request.POST.get('ai_base_url', '').strip(),
+            ai_model=request.POST.get('ai_model', '').strip(),
+        )
         messages.success(request, f"Review completed! Overall Score: {review.overall_score}%")
+        if review.ai_review_error:
+            messages.warning(request, 'The rule-based review completed. The optional AI review was unavailable; see the report for details.')
         return redirect('project_findings', pk=pk)
     except ValidationError as exc:
         messages.error(request, exc.messages[0])
@@ -239,8 +267,8 @@ def start_review_view(request, pk):
 
 @login_required
 def project_findings_view(request, pk):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner != request.user:
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
         raise PermissionDenied
     review = project.reviews.filter(status='completed').order_by('-created_at').first()
     if not review:
@@ -250,7 +278,7 @@ def project_findings_view(request, pk):
     findings = review.findings.select_related('requirement', 'mentor_override__reviewer').all()
 
     if request.method == 'POST':
-        if not request.user.is_mentor_user:
+        if not can_manage_project(request.user, project):
             raise PermissionDenied
         finding_id = request.POST.get('finding_id')
         final_status = request.POST.get('final_status')
@@ -293,8 +321,8 @@ def project_findings_view(request, pk):
 
 @login_required
 def project_report_view(request, pk, review_id=None):
-    project = get_object_or_404(Project, pk=pk)
-    if not request.user.is_mentor_user and project.owner != request.user:
+    project = get_user_project(request.user, pk)
+    if project.is_archived and not can_manage_project(request.user, project):
         raise PermissionDenied
     review = get_object_or_404(project.reviews.filter(status='completed'), pk=review_id) if review_id else project.reviews.filter(status='completed').order_by('-created_at').first()
     if not review:
@@ -329,6 +357,11 @@ def project_report_view(request, pk, review_id=None):
         {'name': name, 'score': round(sum(values) / len(values) * 100), 'count': len(values)}
         for name, values in sorted(category_totals.items())
     ]
+    priority_order = {'High': 0, 'Medium': 1, 'Low': 2}
+    improvement_plan = sorted(
+        (finding for finding in findings if finding.current_status != 'Implemented' and finding.suggestion),
+        key=lambda finding: (priority_order.get(finding.priority, 3), finding.created_at),
+    )
     inspection = ProjectAnalyzer.inspect_python_code(ProjectAnalyzer.scan_files(project.extracted_path))
     previous_review = project.reviews.filter(status='completed', created_at__lt=review.created_at).order_by('-created_at').first()
 
@@ -344,6 +377,7 @@ def project_report_view(request, pk, review_id=None):
         'score_delta': score_delta,
         'has_overrides': has_overrides,
         'category_scores': category_scores,
+        'improvement_plan': improvement_plan,
         'testing_summary': f"{inspection['test_files_count']} test file(s) detected" if inspection['test_files_count'] else 'No test files were detected. Tests were not executed.',
         'documentation_summary': 'README or project documentation detected' if inspection['has_readme'] else 'No README or documentation file was detected.',
         'previous_review': previous_review,
@@ -351,10 +385,26 @@ def project_report_view(request, pk, review_id=None):
     }
     return render(request, 'report.html', context)
 
+
+@login_required
+@require_POST
+def archive_project_view(request, pk):
+    project = get_user_project(request.user, pk)
+    if not can_manage_project(request.user, project):
+        raise PermissionDenied
+    project.is_archived = not project.is_archived
+    project.save(update_fields=['is_archived'])
+    action = 'PROJECT_ARCHIVE' if project.is_archived else 'PROJECT_RESTORE'
+    ActivityService.record(user=request.user, project=project, action=action, message=f"{'Archived' if project.is_archived else 'Restored'} project '{project.name}'.")
+    messages.success(request, f"Project {'archived' if project.is_archived else 'restored'}.")
+    return redirect('project_list')
+
 @login_required
 def activities_view(request):
-    if request.user.is_mentor_user:
+    if request.user.is_admin_user:
         activities = Activity.objects.all()[:100]
+    elif request.user.role == User.MENTOR:
+        activities = Activity.objects.filter(Q(project__assigned_mentor=request.user) | Q(user=request.user, project__isnull=True))[:100]
     else:
         activities = Activity.objects.filter(user=request.user)[:100]
     return render(request, 'activities.html', {'activities': activities})

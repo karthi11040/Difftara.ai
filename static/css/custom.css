@@ -265,6 +265,16 @@ button, a, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 .optional-label { color: var(--muted); font-size: 10px; font-weight: 400; }
 .review-result { margin-top: 24px; }
 .review-markdown { max-height: 760px; margin: 18px 0; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-md); background: #f8f8f9; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 var(--mono); }
+.ai-review-output { max-height: 760px; margin: 0; padding: 16px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-md); background: #f8f8f9; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 var(--mono); }
+.improvement-plan ol { display: grid; gap: 14px; margin: 0; padding-left: 22px; }
+.improvement-plan li { padding-left: 4px; }
+.improvement-plan li p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+.project-ai-options { width: min(100%, 360px); margin-top: 8px; text-align: left; font-size: 11px; }
+.project-ai-options summary { cursor: pointer; color: var(--muted); }
+.project-ai-options > label, .project-ai-fields label { display: block; margin-top: 9px; }
+.project-ai-fields { margin-top: 8px; }
+.project-ai-fields[hidden] { display: none; }
+.project-ai-fields input, .project-ai-options select { width: 100%; margin-top: 5px; }
 .oauth-button { justify-content: center; }
 .provider-logo { width: 19px; height: 19px; flex: 0 0 19px; }
 .github-logo { color: #171717; }

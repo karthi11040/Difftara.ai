@@ -40,17 +40,18 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'project', 'mentor', 'mentor_name', 'status', 'overall_score', 'compliance_score', 'quality_score', 'testing_score', 'doc_score', 'created_at', 'findings']
+        fields = ['id', 'project', 'mentor', 'mentor_name', 'status', 'overall_score', 'compliance_score', 'quality_score', 'testing_score', 'doc_score', 'ai_provider', 'ai_model', 'ai_review', 'ai_review_error', 'created_at', 'findings']
 
 class ProjectSerializer(serializers.ModelSerializer):
     owner_name = serializers.ReadOnlyField(source='owner.username')
+    assigned_mentor_name = serializers.ReadOnlyField(source='assigned_mentor.username')
     requirements = RequirementSerializer(many=True, read_only=True)
     latest_score = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id', 'name', 'description', 'owner', 'owner_name', 'zip_file', 'srs_file', 'status', 'created_at', 'requirements', 'latest_score']
-        read_only_fields = ['owner', 'owner_name', 'status', 'created_at', 'requirements', 'latest_score']
+        fields = ['id', 'name', 'description', 'owner', 'owner_name', 'assigned_mentor', 'assigned_mentor_name', 'is_archived', 'zip_file', 'srs_file', 'status', 'created_at', 'requirements', 'latest_score']
+        read_only_fields = ['owner', 'owner_name', 'assigned_mentor', 'assigned_mentor_name', 'is_archived', 'status', 'created_at', 'requirements', 'latest_score']
 
     def validate_zip_file(self, value):
         validate_zip_upload(value)

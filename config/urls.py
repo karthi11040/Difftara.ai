@@ -8,7 +8,7 @@ from accounts.views import login_view, logout_view, firebase_login_view, signup_
 from projects.views import (
     dashboard_view, project_list_view, upload_project_view, 
     project_detail_view, start_review_view, project_findings_view, 
-    project_report_view, activities_view
+    project_report_view, activities_view, archive_project_view
 )
 from projects.api_views import (
     api_login, api_projects, api_project_detail, api_start_review,
@@ -32,6 +32,7 @@ urlpatterns = [
     path('projects/upload/', upload_project_view, name='upload_project'),
     path('projects/<int:pk>/', project_detail_view, name='project_detail'),
     path('projects/<int:pk>/start-review/', start_review_view, name='start_review'),
+    path('projects/<int:pk>/archive/', archive_project_view, name='archive_project'),
     path('projects/<int:pk>/findings/', project_findings_view, name='project_findings'),
     path('projects/<int:pk>/report/', project_report_view, name='project_report'),
     path('projects/<int:pk>/reviews/<int:review_id>/report/', project_report_view, name='review_report'),

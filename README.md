@@ -25,6 +25,7 @@ Open `http://localhost:8000/` (use `localhost` for Firebase Auth locally). Sign 
 
 - The quick review page accepts pasted code, one source file, or a ZIP project. It checks Python syntax without executing code, then asks the selected AI provider for evidence-based findings, corrected snippets, and a verification guide. AI analysis is not exhaustive and suggestions need human review.
 - Choose GenSeraLabs (server-side `GENSARA_API_KEY` or a key entered for one review), a custom OpenAI chat-completions-compatible provider (HTTPS URL, model, and key entered for one review), or Ollama. Keys entered in the form are used for that request and are not saved. Hosted providers receive the submitted source; choose Ollama to keep it local.
+- Project reviews can also opt into AI analysis on the project page. The SRS requirements and source are sent together, and the AI response is saved in that review's report. AI is optional; the rule-based review still completes if the provider is unavailable. Project AI input is limited to 100 files and 80,000 characters.
 - Install [Ollama](https://ollama.com/download), then run `ollama pull qwen2.5-coder:1.5b-instruct`. The app calls Ollama at `http://127.0.0.1:11434`.
 - Email/password verification and Google/GitHub sign-in use Firebase Authentication. Enable Email/Password, Google, and GitHub under Firebase Console → Authentication → Sign-in method. For GitHub, set the GitHub OAuth app's Authorization callback URL to `https://difftara-ai-139ec.firebaseapp.com/__/auth/handler`, then enter that app's client ID and secret in Firebase. For Google, make sure the Firebase provider uses the web OAuth client ID/secret from the linked Google Cloud project. Add `localhost`, `127.0.0.1`, and deployed domains to Firebase's authorized domains. Django verifies Firebase ID tokens against Google's signing certificates; no service-account file is needed.
 - Set `GENSARA_API_KEY` in the server environment to enable GenSera. Never place it in JavaScript, templates, or Git.
@@ -33,11 +34,13 @@ The app uses SQLite by default. For local development, Django creates a temporar
 
 ## Review workflow
 
-1. A mentor uploads a ZIP file (up to 50 MB) and an optional TXT, PDF, DOCX, or CSV SRS.
+1. A mentor uploads a ZIP file (up to 50 MB), an optional TXT, PDF, DOCX, or CSV SRS, and assigns the project to a student and responsible mentor.
 2. Enter requirements manually when the SRS does not contain recognizable statements.
 3. Run the review to inspect Python files, match requirements, score quality and testing evidence, and generate findings.
 4. A mentor can record whether a finding is correct, adjust its final status, and add a comment.
-5. Open or print the report. Each run remains in the project review history.
+5. Optionally add an AI provider and key for code-level findings and corrected examples, then open or print the report. Each run remains in the project review history.
+
+Mentors see only their assigned projects; admins can see and reassign all projects. Projects can be archived and restored from their detail page. Older projects with a completed review are assigned to their most recent reviewer by migration; admins can assign older unreviewed projects in Django Admin.
 
 The SRS analyzer applies straightforward rules and can produce false positives or false negatives. AI review suggestions also require human verification; no code is executed and tests are not run.
 
